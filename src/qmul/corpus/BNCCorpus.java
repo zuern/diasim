@@ -11,9 +11,11 @@
 package qmul.corpus;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,6 +35,8 @@ import qmul.util.parse.CreateTreeFromClarkCurranCCGProlog;
 import qmul.util.parse.PennTreebankTokenizer;
 import qmul.util.parse.RASPParser;
 import qmul.util.parse.StanfordParser;
+import csli.util.FileUtils;
+import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.ling.TaggedWord;
 import edu.stanford.nlp.ling.Word;
 import edu.stanford.nlp.parser.Parser;
@@ -49,8 +53,10 @@ public class BNCCorpus extends DialogueCorpus {
 
 	private static final String ID = "BNC";
 
-	private static final String BASE_DIR = "/import/imc-corpora/corpora/BNC-XML";
-	private static final String DATA_DIR = "Texts";
+	private static final String BASE_DIR = "/import/imc-corpora/corpora/bnc/bnc-xml";
+	private static final String DATA_DIR = "Texts/F/FM";
+	// private static final String TIMING_DIR = "/import/imc-corpora/corpora/bnc/bnc-audio";
+	private static final String TIMING_DIR = "/Users/mpurver/Documents/imc-corpora/corpora/bnc/bnc-audio";
 
 	private static final PennTreebankTokenizer tok = new PennTreebankTokenizer(true);
 
@@ -67,10 +73,13 @@ public class BNCCorpus extends DialogueCorpus {
 	protected static boolean removeFilledPauses = false;
 	protected static boolean removeBackchannels = false;
 	protected static boolean removePunctuationTokens = false;
+	protected static boolean replaceTruncatedTokens = false; // must be false if using getTimings
 
 	private static boolean includeMonologue = false;
 	public static final String DIALOGUE_TYPE = "spolog2";
 	public static final String MONOLOGUE_TYPE = "spolog1";
+
+	public static final boolean getTimings = true;
 
 	/**
 	 * Create a BNC corpus, reading data files from the default (unix) directory
@@ -142,6 +151,14 @@ public class BNCCorpus extends DialogueCorpus {
 	 */
 	public static void setRemoveUnknowns(boolean removeUnknowns) {
 		BNCCorpus.removeUnknowns = removeUnknowns;
+	}
+
+	/**
+	 * @param replaceTruncatedTokens
+	 *            the replaceTruncatedTokens to set
+	 */
+	public static void setReplaceTruncatedTokens(boolean replaceTruncatedTokens) {
+		BNCCorpus.replaceTruncatedTokens = replaceTruncatedTokens;
 	}
 
 	/**
@@ -436,6 +453,95 @@ public class BNCCorpus extends DialogueCorpus {
 		return success;
 	}
 
+	private class TextGridFileFilter implements FilenameFilter {
+
+		private String pattern;
+
+		private TextGridFileFilter(String a, int b) {
+			this.pattern = ".+" + b + ".+" + a + ".+TextGrid";
+			System.out.println("new file pattern " + pattern);
+		}
+
+		@Override
+		public boolean accept(File dir, String name) {
+			return name.matches(pattern);
+		}
+
+	}
+
+	protected ArrayList<DialogueWord<Word>> wordTimings = null;
+
+	private void getWordTimings(Dialogue dialogue) {
+		String dialogueName = dialogue.getId();
+		int divNo = 1;
+		if (dialogue.getId().contains(":")) {
+			String[] bits = dialogue.getId().split(":");
+			dialogueName = bits[0];
+			divNo = Integer.parseInt(bits[1]);
+		}
+		System.out.println("Looking for Praat TextGrid file for " + dialogueName + " " + divNo + " ...");
+		wordTimings = new ArrayList<DialogueWord<Word>>();
+		File dir = new File(TIMING_DIR);
+		File[] files = dir.listFiles(new TextGridFileFilter(dialogueName, divNo));
+		if (files == null || files.length != 1) {
+			System.out.println("Problem finding files for " + dialogueName + " " + divNo + ": " + files);
+			wordTimings = null;
+		} else {
+			for (File file : files) {
+				System.out.println("Reading Praat TextGrid file " + file + " ...");
+				ArrayList<String> lines = new ArrayList<String>();
+				try {
+					FileUtils.getFileLines(file, lines);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				boolean found1 = false;
+				boolean found2 = false;
+				boolean started = false;
+				float startTime = -1.0f;
+				float endTime = -1.0f;
+				int num = 1;
+				for (String line : lines) {
+					if (started && line.equals("\"IntervalTier\"")) {
+						found1 = found2 = started = false; // stop at next IntervalTier
+					}
+					if (started) {
+						try {
+							float f = Float.parseFloat(line);
+							if (startTime < 0) {
+								startTime = f;
+							} else {
+								endTime = f;
+							}
+						} catch (NumberFormatException e) {
+							if (line.startsWith("\"")) {
+								line = line.substring(1);
+							}
+							if (line.endsWith("\"")) {
+								line = line.substring(0, line.length() - 1);
+							}
+							DialogueWord<Word> w = new DialogueWord<Word>(dialogue.getId() + " " + num, num++,
+									dialogue, null, new Word(line));
+							w.setStartTime(startTime);
+							w.setEndTime(endTime);
+							// System.out.println("found word " + w);
+							wordTimings.add(w);
+							startTime = -1.0f;
+							endTime = -1.0f;
+						}
+					}
+					found2 = (found1 && line.equals("\"word\""));
+					if (found2) {
+						started = true; // start at IntervalTier followed by "word"
+					}
+					found1 = line.equals("\"IntervalTier\"");
+				}
+				System.out.println("Read " + wordTimings.size() + " wordTimings " + wordTimings.get(0) + " "
+						+ wordTimings.get(wordTimings.size() - 1));
+			}
+		}
+	}
+
 	private boolean getDivs(String dialogueName, NodeList list) {
 		int autoDivNo = 0; // some e.g. KS7 have no <div> numbering
 		if (firstNonEmptyNodeName(list).equals("div")) {
@@ -463,6 +569,9 @@ public class BNCCorpus extends DialogueCorpus {
 
 	private boolean getSubdialogue(String dialogueName, String genre, NodeList list) {
 		Dialogue dialogue = addDialogue(dialogueName, genre);
+		if (getTimings) {
+			getWordTimings(dialogue);
+		}
 		if (!getTurns(dialogue, list)) {
 			return false;
 		}
@@ -499,6 +608,8 @@ public class BNCCorpus extends DialogueCorpus {
 						success = false;
 					}
 					// System.out.println("turn " + turn);
+					// } else {
+					// System.out.println("null turn for " + spk + " " + removeUnknowns);
 				}
 			}
 		}
@@ -541,7 +652,7 @@ public class BNCCorpus extends DialogueCorpus {
 	}
 
 	private boolean getSentences(Dialogue dialogue, DialogueTurn turn, NodeList list) {
-		boolean success = true;
+		DialogueSentence s = null;
 		if (firstNonEmptyNodeName(list).equals("s")) {
 			for (int i = 0; i < list.getLength(); i++) {
 				if (list.item(i).getNodeName().equals("s")) {
@@ -554,11 +665,21 @@ public class BNCCorpus extends DialogueCorpus {
 							taggedLemmas);
 					String transcription = trans.first();
 					List<Word> tokens = tok.getWordsFromString(trans.second());
-					// System.out.println(sentNo + " trans " + transcription);
-					DialogueSentence s = dialogue.addSent(sentNo, turn, transcription, null);
+					System.out.println(sentNo + " trans " + transcription);
+					System.out.println(sentNo + " toks " + tokens);
+					s = dialogue.addSent(sentNo, turn, transcription, null);
 					s.setTokens(tokens);
 					s.setTaggedWords(taggedWords);
 					s.setTaggedLemmas(taggedLemmas);
+					if (getTimings && (wordTimings != null)) {
+						addTimings(s, turn, dialogue);
+						System.out.println("matched sent " + s.getId() + " " + s.getStartTime() + "-" + s.getEndTime());
+						System.out.println(" so turn " + turn.getId() + " " + turn.getStartTime() + "-"
+								+ turn.getEndTime());
+					}
+					if (dialogue.getId().startsWith("FM4") && (s.getNum()>760)) {
+						System.exit(0);
+					}
 				} else {
 					if (list.item(i).getNodeName().equals("#text") && list.item(i).getNodeValue().trim().isEmpty()) {
 						// just some intervening white space
@@ -576,13 +697,250 @@ public class BNCCorpus extends DialogueCorpus {
 			Pair<String, String> trans = getTranscription(list, taggedWords, taggedLemmas);
 			String transcription = trans.first();
 			List<Word> tokens = tok.getWordsFromString(trans.second());
-			DialogueSentence s = dialogue.addSent(-1, turn, transcription, null);
+			System.out.println(-1 + " trans " + transcription);
+			System.out.println(-1 + " toks " + tokens);
+			s = dialogue.addSent(-1, turn, transcription, null);
 			s.setTokens(tokens);
 			s.setTaggedWords(taggedWords);
 			s.setTaggedLemmas(taggedLemmas);
+			// // Looks like nonverbal turns don't have matching TextGrid timings
+			// if (getTimings && (wordTimings != null)) {
+			// addTimings(s, turn, dialogue);
+			// }
 			// System.out.println("Added as " + s.getNum() + " = " + s.getTranscription());
 		}
-		return success;
+		return (s != null);
+	}
+
+	/**
+	 * get the corresponding subsequences from head of wordTimings and current position in a token list (timings
+	 * contains e.g. "it's" when tokens have separate "it", "'s")
+	 * 
+	 * @param tokens
+	 * @param iT
+	 * @return the number of members to match, or null if no match
+	 */
+	private Pair<Integer, Integer> matchTimings(List<HasWord> tokens, int iT) {
+		return matchTimings(tokens, iT, 0, 0, "", ""); // yes I know, I used to program in Prolog
+	}
+
+	protected static String lastTim = "";
+
+	/**
+	 * @param tim
+	 * @param tok
+	 * @return whether a textgrid token tim matches a BNC token tok
+	 */
+	private boolean matchTokens(String tim, String tok) {
+		if (tim.equals(tok) || tim.replaceAll("['.]", "").equals(tok.replaceAll("['.]", ""))
+				|| (tim.startsWith("{gap_") && tok.startsWith("gap_"))) {
+			return true;
+		} else if (tim.equals("{oov}")
+				|| tim.equals("{ns}")
+				// case for compounds e.g. "d{oov}" matching "d'ya", "bric-{oov}-brac" matching "bric-à-brac"
+				|| (tim.contains("{oov}") && tok.matches(tim.replace("{oov}", ".*").replaceAll("([\\{\\}\\[\\]])",
+						"\\$1")))) {
+			return true;
+			// } else if (tok.equals("unclear")) { // actually expect this to match {oov}
+			// return true;
+		}
+		return false;
+	}
+
+	/**
+	 * get the corresponding subsequences from head of wordTimings and current position in a token list (timings
+	 * contains e.g. "it's" when tokens have separate "it", "'s"; and tokens have hyphenated e.g. "off-licence" when
+	 * timings have separate "off", "licence")
+	 * 
+	 * @param tokens
+	 * @param iT
+	 * @param iTim
+	 * @param iTok
+	 * @param timSoFar
+	 * @param tokSoFar
+	 * @return the number of members to match, or null if no match
+	 */
+	private Pair<Integer, Integer> matchTimings(List<HasWord> tokens, int iT, int iTim, int iTok, String timSoFar,
+			String tokSoFar) {
+		if ((iTim >= wordTimings.size()) || ((iT + iTok) >= tokens.size())) {
+			return null;
+		}
+		while (wordTimings.get(iTim).getWord().word().equals("sp") // pauses don't match tokens
+				|| wordTimings.get(iTim).getWord().word().matches("^\\{(LG|CG|BR|XX)\\}$")) { // laughter, cough etc
+			iTim++;
+		}
+		String tim = timSoFar + wordTimings.get(iTim).getWord().word().toLowerCase();
+		String tok = tokSoFar + tokens.get(iT + iTok).word().replaceAll("/", "").toLowerCase(); // "ab" matches "a/b"
+		String lastTok = ((iT + iTok) > 0 ? tokens.get(iT + iTok - 1).word().toLowerCase() : ""); // TODO not if
+																									// tokSoFar
+		String nextTok = ((iT + iTok) < (tokens.size() - 1) ? tokens.get(iT + iTok + 1).word().toLowerCase() : "");
+		String nextTim = (iTim < (wordTimings.size() - 1) ? wordTimings.get(iTim + 1).getWord().word().toLowerCase()
+				: "");
+		String nextNonSpTim = nextTim;
+		int iTmp = iTim + 1;
+		while ((nextNonSpTim.equals("sp") || nextNonSpTim.matches("^\\{(lg|cg|br|xx)\\}$"))
+				&& (iTmp < (wordTimings.size() - 1))) {
+			nextNonSpTim = wordTimings.get(iTmp + 1).getWord().word().toLowerCase();
+			iTmp++;
+		}
+		System.out.println("Matching " + tim + " " + tok + " (" + lastTim + " " + lastTok + ") (" + nextTim + " "
+				+ nextNonSpTim + " " + nextTok + ")");
+		if (tim.equals("{oov}")
+				&& !(tok.equals("unclear") || tok.equals("truncated_word"))
+				&& (!nextNonSpTim.isEmpty() && !nextNonSpTim.equals("{oov}") && !nextTok.isEmpty()
+						&& matchTokens(nextNonSpTim, tok) && !matchTokens(nextNonSpTim, nextTok))) {
+			// match 1 against 0 if a (usually sentence-initial) {oov} matches nothing
+			// or a matching {oov} can match more e.g. "bric-{oov}" matching "bric-à-brac" when "brac" is coming next
+			System.out.println("clause 1");
+			return matchTimings(tokens, iT, iTim + 1, iTok, timSoFar, tokSoFar);
+		} else if (tim.contains("{oov}")
+				&& !(tok.equals("unclear") || tok.equals("truncated_word"))
+				&& (!nextNonSpTim.isEmpty() && !nextNonSpTim.equals("{oov}") && !nextTok.isEmpty()
+						&& matchTokens(tim + nextNonSpTim, tok) && !matchTokens(nextNonSpTim, nextTok))) {
+			// match 2 against 1 if {oov} can match more e.g. "bric-{oov}" matching "bric-à-brac" when "brac" is coming
+			System.out.println("clause 1a");
+			return matchTimings(tokens, iT, iTim + 1, iTok, tim, tokSoFar);
+			// TRY WITHOUT: gets to K6J with
+			// } else if (tim.equals("{oov}")
+			// && !(tok.equals("unclear") || tok.equals("truncated_word") || tok.startsWith("gap_"))
+			// && (!nextNonSpTim.isEmpty() && !nextTok.isEmpty() && !matchTokens(nextNonSpTim, nextTok))) {
+			// // match 1 against many if a {oov} has to match more than one token
+			// System.out.println("clause 2a");
+			// return matchTimings(tokens, iT, iTim, iTok + 1, timSoFar, tok);
+		} else if (tim.equals("oov") && lastTok.equals("truncated_word") && nextTok.endsWith(tok)) {
+			// match {oov} 1 against 2 if they are repeated self-repairs
+			System.out.println("clause 2");
+			return new Pair<Integer, Integer>(iTim + 1, iTok + 2);
+		} else if (matchTokens(tim, tok) || (tok.startsWith("'") && matchTokens(tim, lastTok + tok))
+				|| (tim.equals("t") && tok.equals("n't"))) {
+			// standard - match 1 against 1
+			System.out.println("clause 3");
+			return new Pair<Integer, Integer>(iTim + 1, iTok + 1);
+		} else if (tok.equals("unclear")) {
+			// match 0 against 1 for [unclear] token if it didn't match {oov} in clause above
+			System.out.println("clause 4");
+			return new Pair<Integer, Integer>(iTim, iTok + 1);
+		} else if (tok.endsWith("truncated_word")) {
+			// match 2 against 1 for cases where truncated part is split "o'clo[ck]-", "we'v-", "re-lau-", "he's-",
+			System.out.println("clause 5");
+			// if ((tim.equals("o") && nextTim.startsWith("clo")) || (tim.equals("we") && nextTim.equals("v"))
+			// || (tim.equals("re") && nextTim.equals("lau")) || (tim.equals("organo") && nextTim.equals("{oov}"))
+			// || (tim.equals("he") && nextTim.equals("s")) || (tim.equals("non") && nextTim.equals("gav"))
+			// || (tim.equals("re") && nextTim.equals("writ")) || (tim.equals("krook") && nextTim.equals("lo"))
+			// || (tim.equals("multi") && nextNonSpTim.equals("c"))
+			// || (tim.equals("pre") && nextNonSpTim.equals("element"))
+			// || (tim.equals("re") && nextNonSpTim.equals("in")) || (tim.equals("d") && nextNonSpTim.equals("y"))) {
+			if (tok.startsWith(tim + nextNonSpTim)) {
+				return matchTimings(tokens, iT, iTim + 1, iTok, tim + "'", tokSoFar);
+			}
+			// else match 1 against 1
+			return new Pair<Integer, Integer>(iTim + 1, iTok + 1);
+		} else if ((tim.contains("'") || nextTok.equals("n't") || nextTok.equals("s"))
+				&& (!tok.contains("'") || tok.startsWith("o'") || tok.equals("'n'") || tok.equals("'em"))
+				&& tim.startsWith(tok.replaceFirst("^'", ""))) {
+			System.out.println("clause 6");
+			// contractions: match 1 in textgrids against 2 in tokenised transcript ("i've" vs "i 've")
+			if (nextTok.matches("^(ve|re|ll|m|s|un|uns|all|dear|er)$")) {
+				tok += "'"; // sometimes BNC transcription misses off '
+			}
+			return matchTimings(tokens, iT, iTim, iTok + 1, timSoFar, tok);
+			// } else if (!tim.contains("-") && tok.contains("-") && tok.startsWith(tim)) {
+		} else if (tok.contains("-") && tok.equals(tim + "-")) {
+			System.out.println("clause 7");
+			// hyphenations: occasionally match 2 in textgrids against 2 in tokenised transcript ("anti X" vs "anti- X")
+			return matchTimings(tokens, iT, iTim + 1, iTok + 1, tim + "-", tok);
+		} else if (tok.contains("-") && tok.startsWith(tim + "-")) {
+			// hyphenations: usually match 2 in textgrids against 1 in tokenised transcript ("semi X" vs "semi-X")
+			System.out.println("clause 8");
+			return matchTimings(tokens, iT, iTim + 1, iTok, tim + "-", tokSoFar);
+		} else if (tok.replace(".", "").startsWith(tim)) {
+			// compounds: match 2 in textgrids against 1 in tokenised transcript ("wa n na" vs "wanna")
+			// (including "man/woman" which will then match when / removed)
+			System.out.println("clause 9");
+			if (tok.startsWith(nextNonSpTim)) {
+				// but in some cases, ditch the initial e.g. "s self"
+				return matchTimings(tokens, iT, iTim + 1, iTok, timSoFar, tokSoFar);
+			} else {
+				return matchTimings(tokens, iT, iTim + 1, iTok, tim, tokSoFar);
+			}
+		} else if (tim.equals("sa") && tokens.get(iT + iTok - 1).word().toLowerCase().equals("truncated_word")) {
+			// special (because unsafe) case to match truncated & already hyphenated words
+			System.out.println("clause 10");
+			return new Pair<Integer, Integer>(iTim + 1, iTok);
+		} else if (matchTokens(tim, nextTok) || tok.startsWith("gap_") || tok.equals("hunslet")) {
+			// match 0 against 1 for if there's a missing word in the TextGrids (see e.g. JNG, JNH) or "hunslet" in KGP
+			System.out.println("clause 11");
+			return new Pair<Integer, Integer>(iTim, iTok + 1);
+		}
+		return null;
+	}
+
+	/**
+	 * Add start/end times at sentence, turn and dialogue level, from textgrid wordTimings
+	 * 
+	 * @param s
+	 * @param turn
+	 * @param dialogue
+	 */
+	private void addTimings(DialogueSentence s, DialogueTurn turn, Dialogue dialogue) {
+		int iT = 0;
+		ArrayList<HasWord> myTokens = new ArrayList<HasWord>(s.getTokens());
+		if (!removePunctuationTokens) {
+			// if haven't previously removed punctuation-only tokens, remove them now (replacing ampersands)
+			myTokens.clear();
+			for (HasWord token : s.getTokens()) {
+				if (token.word().matches("^&$")) {
+					myTokens.add(new Word("and"));
+				}
+				if (token.word().matches(".*\\w.*")) {
+					myTokens.add(token);
+				}
+			}
+		}
+		while (iT < myTokens.size()) {
+			// System.out.println("iT = " + iT + " len " + wordTimings.size());
+			while ((wordTimings.size() > 0) && (wordTimings.get(0).getWord().word().equals("sp") // pauses don't match
+					|| wordTimings.get(0).getWord().word().matches("^\\{(LG|CG|BR|XX)\\}$"))) { // laughter, cough etc
+				wordTimings.remove(0);
+			}
+			Pair<Integer, Integer> m = matchTimings(myTokens, iT);
+			if (m != null) {
+				float start = wordTimings.get(0).getStartTime();
+				// System.out.println("got start " + start + " vs " + turn.getStartTime() + " " + s.getStartTime());
+				if (Float.isNaN(turn.getStartTime())) {
+					turn.setStartTime(start);
+				}
+				if (Float.isNaN(s.getStartTime())) {
+					s.setStartTime(start);
+				}
+				if (Float.isNaN(dialogue.getStartTime()) || (start < dialogue.getStartTime())) {
+					dialogue.setStartTime(start);
+				}
+				float end = wordTimings.get(m.first() > 0 ? m.first() - 1 : 0).getEndTime();
+				turn.setEndTime(end);
+				s.setEndTime(end);
+				if (Float.isNaN(dialogue.getEndTime()) || (end > dialogue.getEndTime())) {
+					dialogue.setEndTime(end);
+				}
+				for (int i = 0; i < m.first(); i++) {
+					lastTim = wordTimings.get(0).getWord().word().toLowerCase();
+					wordTimings.remove(0);
+				}
+				iT += m.second();
+			} else {
+				System.out.println("mismatch " + (wordTimings.isEmpty() ? "[]" : wordTimings.get(0).getWord().word())
+						+ " vs " + (myTokens.isEmpty() ? "[]" : myTokens.get(iT)) + " (" + wordTimings.size() + " "
+						+ myTokens.size() + ") " + myTokens.get(0).word().toLowerCase());
+				if (wordTimings.isEmpty() && ((myTokens.size() - iT) < 2)) {
+					// could just have come across a "mute" or similar
+					System.out.println(" " + turn.getStartTime() + " " + turn.getEndTime());
+					return;
+				} else {
+					// something seriously wrong
+					System.exit(0);
+				}
+			}
+		}
 	}
 
 	/**
@@ -602,6 +960,12 @@ public class BNCCorpus extends DialogueCorpus {
 			if (list.item(i).getNodeName().equals("w")) {
 				// word
 				String w = list.item(i).getFirstChild().getNodeValue();
+				// fix bug in KC1 s440 he'd've
+				w = w.replaceFirst("^he'd'\\s*$", "he'd");
+				// fix bug in KCS s1976 m=Mm, s22051 y=Yes, KCU s7900 j=Just, s9510 p=bonk, HUW s114 an=and etc etc
+				w = w.replaceFirst("^\\w+=(\\w)", "$1");
+				// fix bug in KDE s1750 then.Come
+				w = w.replaceFirst("([a-z]\\.)([A-Z])", "$1 $2");
 				boolean remove = (removeFilledPauses && w.matches("(?i)^er(m)?$"))
 						|| (removeBackchannels && w.matches("(?i)^(h|m)m+$"));
 				trans1 += (remove ? " " : w);
@@ -630,14 +994,18 @@ public class BNCCorpus extends DialogueCorpus {
 					desc = list.item(i).getAttributes().getNamedItem("reason");
 				}
 				trans1 += " [" + desc.getNodeValue() + "] ";
-				trans2 += " " + desc.getNodeValue().replaceAll("\\s+", "_").toUpperCase() + " ";
+				// trans2 += " " + desc.getNodeValue().replaceAll("\\s+", "_").toUpperCase() + " ";
+				// prevent tokeniser splitting entities e.g. TRAVEL_NEWS+WEATHER
+				trans2 += " GAP_" + desc.getNodeValue().replaceAll("(\\s+|\\+)", "_").toUpperCase() + " ";
 			} else if (list.item(i).getNodeName().equals("event")) {
 				trans1 += " [" + list.item(i).getAttributes().getNamedItem("desc").getNodeValue() + "] ";
 				trans2 += " ";
 			} else if (list.item(i).getNodeName().equals("trunc")) {
 				Pair<String, String> trans = getTranscription(list.item(i).getChildNodes(), taggedWords, taggedLemmas);
 				trans1 += " " + trans.first() + "-";
-				trans2 += " " + trans.second() + " ";
+				trans2 += " "
+						+ (replaceTruncatedTokens ? trans.second().replaceFirst("\\S+\\s*$", "truncated_word") : trans
+								.second()) + " ";
 			} else if (list.item(i).getNodeName().equals("mw")) {
 				Pair<String, String> trans = getTranscription(list.item(i).getChildNodes(), taggedWords, taggedLemmas);
 				trans1 += " " + trans.first() + " ";
@@ -667,6 +1035,15 @@ public class BNCCorpus extends DialogueCorpus {
 				}
 			}
 		}
+		// fix bug in KB7 s8235 (and a few other places) extraneous ) character
+		// System.out.println("raw " + trans1);
+		// System.out.println("raw " + trans2);
+		if (trans1.matches("^[^\\(]*\\).*")) {
+			trans1 = trans1.replaceFirst("\\)", " ");
+			trans2 = trans2.replaceFirst("\\)", " ");
+		}
+		// System.out.println("raww " + trans1);
+		// System.out.println("raww " + trans2);
 		return new Pair<String, String>(trans1.replaceAll("\\s+", " ").trim(), trans2.replaceAll("\\s+", " ").trim());
 	}
 
@@ -741,6 +1118,18 @@ public class BNCCorpus extends DialogueCorpus {
 				.equalsIgnoreCase(dialogue.getId() + ":" + UNKNOWN_GROUP_SPEAKER));
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see qmul.corpus.DialogueCorpus#topTenSynProductions()
+	 */
+	@Override
+	public HashSet<String> topTenSynProductions() {
+		return new HashSet<String>(Arrays.asList("S[dcl]:NP:S[dcl]\\NP", "NP:N", "NP[nb]:NP[nb]/N:N", "N:N/N:N",
+				"NP:NP:NP\\NP", "S[dcl]:S[dcl]:.", "S[dcl]\\NP:(S[dcl]\\NP)/NP:NP", "S[dcl]:S[X]/S[X]:S[dcl]",
+				"NP:NP[nb]:NP\\NP", "S[dcl]\\NP:(S[dcl]\\NP)/(S[b]\\NP):S[b]\\NP"));
+	}
+
 	/**
 	 * just for testing
 	 * 
@@ -753,15 +1142,18 @@ public class BNCCorpus extends DialogueCorpus {
 		}
 
 		// to create a parsed corpus:
-		// String raw = "bnc";
-		String raw = "bnc_mono";
+		String raw = "bnc";
+		// String raw = "bnc_mono";
 		// String raw = "bnc_nointj";
 		// String raw = "bnc_mono_nointj";
-		File rawBnc = new File(raw + ".corpus");
+		if (getTimings) {
+			raw = raw.replaceFirst("bnc", "bnc_timed");
+		}
+		File rawBnc = new File(raw + ".corpus.gz");
 		BNCCorpus bnc = (BNCCorpus) BNCCorpus.readFromFile(rawBnc);
 		if (bnc == null) {
 			if (!raw.contains("mono")) {
-				BNCCorpus.setRemoveUnknowns(true);
+				// BNCCorpus.setRemoveUnknowns(true); // must be left in to align with Praat timings
 				BNCCorpus.setAssignUnknowns(false);
 				BNCCorpus.setMaxPropUnknownTurns(0.2);
 			}
@@ -793,7 +1185,7 @@ public class BNCCorpus extends DialogueCorpus {
 		if (args.length > 2) {
 			leaveExisting = Boolean.parseBoolean(args[2]);
 		}
-		File parsedBnc = new File(raw + "-" + parserName + ".corpus");
+		File parsedBnc = new File(raw + "_" + parserName + ".corpus.gz");
 		if (parsedBnc.exists()) {
 			bnc = (BNCCorpus) BNCCorpus.readFromFile(parsedBnc);
 		}
@@ -806,10 +1198,12 @@ public class BNCCorpus extends DialogueCorpus {
 		} else if (parserName.equals("stanford")) {
 			parser = ((args.length > 3) ? new StanfordParser(args[3]) : new StanfordParser());
 		}
-		CorpusParser.setParser(parser);
-		CorpusParser.setLeaveExisting(leaveExisting);
-		if (CorpusParser.parse(bnc) > 0) {
-			bnc.writeToFile(parsedBnc);
+		if (parser != null) {
+			CorpusParser.setParser(parser);
+			CorpusParser.setLeaveExisting(leaveExisting);
+			if (CorpusParser.parse(bnc) > 0) {
+				bnc.writeToFile(parsedBnc);
+			}
 		}
 	}
 }

@@ -13,20 +13,27 @@ package qmul.corpus;
 import java.io.File;
 
 /**
- * The ICSI-MRDA corpus from http://www.icsi.berkeley.edu/Speech/mr/ - simple transcript-only version
+ * A user-defined (from command line) {@link TranscriptCorpus}
  * 
  * @author mpurver
  */
-public class MRDATranscriptCorpus extends TranscriptCorpus {
+public class UserTranscriptCorpus extends TranscriptCorpus {
 
-	public static final String DIR = "/import/imc-corpora/data/distr/mrda";
+	public static String DIR = "/path/to/data";
 
-	public static final String ID = "MRDA";
+	public static String ID = "MY_ID";
 
-	public static final String GENRE = "mrda";
+	public static String GENRE = "my_genre";
 
-	public MRDATranscriptCorpus() {
+	public UserTranscriptCorpus() {
 		super(ID, new File(DIR), false);
+	}
+
+	public UserTranscriptCorpus(String id, String dir, String genre) {
+		super(id, new File(dir), false);
+		ID = id;
+		DIR = dir;
+		GENRE = genre;
 	}
 
 	/*
@@ -43,8 +50,11 @@ public class MRDATranscriptCorpus extends TranscriptCorpus {
 	 * just for testing
 	 */
 	public static void main(String[] args) {
-
-		MRDATranscriptCorpus c = new MRDATranscriptCorpus();
-		c.writeToFile(new File("mrda.corpus.gz"));
+		if (args.length != 3) {
+			System.err.println("Need exactly 3 arguments: data_dir corpus_id corpus_genre");
+			System.exit(-1);
+		}
+		UserTranscriptCorpus c = new UserTranscriptCorpus(args[0], args[1], args[2]);
+		c.writeToFile(new File(ID + ".corpus.gz"));
 	}
 }

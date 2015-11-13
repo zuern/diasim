@@ -25,6 +25,8 @@ public class DialogueUnit implements Serializable {
 	private Dialogue dialogue;
 	private Dialogue originalDialogue;
 	private ArrayList<String> daTags = new ArrayList<String>();
+	private float startTime = Float.NaN;
+	private float endTime = Float.NaN;
 
 	/**
 	 * @deprecated just for serialization, use full constructor instead
@@ -160,6 +162,36 @@ public class DialogueUnit implements Serializable {
 	}
 
 	/**
+	 * @return the startTime
+	 */
+	public float getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * @param startTime
+	 *            the startTime to set
+	 */
+	public void setStartTime(float startTime) {
+		this.startTime = startTime;
+	}
+
+	/**
+	 * @return the endTime
+	 */
+	public float getEndTime() {
+		return endTime;
+	}
+
+	/**
+	 * @param endTime
+	 *            the endTime to set
+	 */
+	public void setEndTime(float endTime) {
+		this.endTime = endTime;
+	}
+
+	/**
 	 * @return the number of words based on the standard transcription (defaults to 0 if this doesn't make sense)
 	 */
 	public int numWords() {
@@ -173,4 +205,14 @@ public class DialogueUnit implements Serializable {
 		return 0;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return getId() + (Float.isNaN(getStartTime()) ? "" : (" " + getStartTime()))
+				+ (Float.isNaN(getEndTime()) ? "" : ("-" + getEndTime()));
+	}
 }

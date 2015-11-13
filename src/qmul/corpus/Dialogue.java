@@ -27,22 +27,16 @@ public class Dialogue implements Serializable {
 	private static final long serialVersionUID = 8642286173870170225L;
 
 	private DialogueCorpus corpus;
-
 	private String id;
-
 	private String genre;
-
 	private ArrayList<DialogueTurn> turns;
-
 	private ArrayList<DialogueSentence> sents;
-
 	private HashMap<Integer, Integer> sentIndices;
-
 	private HashSet<DialogueSpeaker> speakers;
-
 	private int turnNum;
-
 	private int sentNum;
+	private float startTime = Float.NaN;
+	private float endTime = Float.NaN;
 
 	/**
 	 * @deprecated default constructor for serialization
@@ -93,6 +87,42 @@ public class Dialogue implements Serializable {
 		getTurns().add(turn);
 		getSpeakers().add(speaker);
 		return turn;
+	}
+
+	/**
+	 * Remove this {@link DialogueTurn} and its constituent {@link DialogueSentence}s
+	 * 
+	 * @param turn
+	 *            The turn to remove
+	 * @return true if all removals succeeded
+	 */
+	public boolean removeTurn(DialogueTurn turn) {
+		boolean success = true;
+		for (DialogueSentence sent : new ArrayList<DialogueSentence>(turn.getSents())) {
+			if (!getSents().remove(sent)) {
+				success = false;
+				System.out.println("Failed to remove sentence " + sent);
+			}
+		}
+		if (!getTurns().remove(turn)) {
+			success = false;
+			System.out.println("Failed to remove turn " + turn);
+		}
+		DialogueSpeaker spk = turn.getSpeaker();
+		boolean found = false;
+		for (DialogueTurn t : getTurns()) {
+			if (t.getSpeaker().equals(spk)) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			if (!getSpeakers().remove(spk)) {
+				success = false;
+				System.out.println("Failed to remove speaker " + spk);
+			}
+		}
+		return success;
 	}
 
 	/**
@@ -278,6 +308,40 @@ public class Dialogue implements Serializable {
 	@Deprecated
 	public void setSpeakers(HashSet<DialogueSpeaker> speakers) {
 		this.speakers = speakers;
+	}
+
+	/**
+	 * @return the startTime
+	 */
+	public float getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * @param startTime
+	 *            the startTime to set
+	 * @deprecated just for serialization
+	 */
+	@Deprecated
+	public void setStartTime(float startTime) {
+		this.startTime = startTime;
+	}
+
+	/**
+	 * @return the endTime
+	 */
+	public float getEndTime() {
+		return endTime;
+	}
+
+	/**
+	 * @param endTime
+	 *            the endTime to set
+	 * @deprecated just for serialization
+	 */
+	@Deprecated
+	public void setEndTime(float endTime) {
+		this.endTime = endTime;
 	}
 
 	/*

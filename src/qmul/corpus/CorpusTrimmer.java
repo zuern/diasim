@@ -128,6 +128,46 @@ public class CorpusTrimmer {
 		return dialogues.isEmpty();
 	}
 
+	/**
+	 * @return the number of unknown-speaker turns removed
+	 */
+	public static int removeUnknowns(DialogueCorpus corpus) {
+		int iT = 0;
+		int iD = 0;
+		int iU = 0;
+		int iUD = 0;
+		for (Dialogue d : new ArrayList<Dialogue>(corpus.getDialogues())) {
+			System.out.println("Checking dialogue " + d.getId() + ", " + ++iD + " of " + corpus.getDialogues().size());
+			// if there's only one known speaker, remove whole dialogue
+			if (((BNCDialogue) d).numKnownSpeakers() != 2) {
+				System.out.println("Unsuitable number of known speakers: " + d.getSpeakers());
+				corpus.removeDialogue(d);
+				iUD++;
+				break;
+			}
+			// check if there are any "unknown" speakers
+			boolean found = false;
+			for (DialogueSpeaker spk : d.getSpeakers()) {
+				if (BNCCorpus.isUnknown(spk)) {
+					found = true;
+					iU++;
+					break;
+				}
+			}
+			// if there are, we have to go through & remove all their turns
+			if (found) {
+				for (DialogueTurn t : new ArrayList<DialogueTurn>(d.getTurns())) {
+					if (BNCCorpus.isUnknown(t.getSpeaker())) {
+						d.removeTurn(t);
+						iT++;
+					}
+				}
+			}
+		}
+		System.out.println("Finished (removed " + iUD + " dialogues, and " + iT + " turns from " + iU + " others)");
+		return iT;
+	}
+
 	public static void main(String[] args) {
 		// reading stories, talking to babies
 		// Pat's initial list
@@ -146,6 +186,12 @@ public class CorpusTrimmer {
 			System.out.println("Removing flagged dialogues " + Arrays.asList(dialoguesToRemove));
 			if (!removeDialogues(corpus, dialoguesToRemove)) {
 				throw new RuntimeException("not all dialogues removed");
+			}
+			boolean removeUnknowns = true;
+			if (removeUnknowns) {
+				// only necessary if removeUnknowns not specified when creating corpus
+				System.out.println("Removing unknown turns ...");
+				removeUnknowns(corpus);
 			}
 			System.out.println("Removing telephone conversations ...");
 			removePhone(corpus);

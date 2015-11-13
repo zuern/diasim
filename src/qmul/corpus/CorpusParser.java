@@ -11,6 +11,7 @@
 package qmul.corpus;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 
 import qmul.util.parse.PennTreebankTokenizer;
@@ -65,7 +66,7 @@ public class CorpusParser {
 	}
 
 	/**
-	 * Parse a corpus, replacing any existing syntactic annotation
+	 * Parse a corpus, replacing any existing syntactic annotation unless isLeaveExisting()
 	 * 
 	 * @param corpus
 	 *            the corpus to parse (which gets modified)
@@ -123,14 +124,72 @@ public class CorpusParser {
 	}
 
 	/**
+	 * Copy parses from corpus1 to corpus2, replacing any existing syntactic annotation unless isLeaveExisting()
+	 * 
+	 * @param corpus1
+	 *            the source (which does not get modified)
+	 * @param corpus2
+	 *            the corpus to parse (which gets modified)
+	 * @return the number of {@link DialogueSentence}s actually affected
+	 */
+	public static int copyParses(DialogueCorpus corpus1, DialogueCorpus corpus2) {
+		// first hash corpus2's sentences by ID so they're easy to find
+		HashMap<String, DialogueSentence> sents = new HashMap<String, DialogueSentence>();
+		for (Dialogue d : corpus1.getDialogues()) {
+			for (DialogueSentence s : d.getSents()) {
+				sents.put(s.getId(), s);
+			}
+		}
+		// now go through and copy
+		int iD = 0;
+		int iS = 0;
+		int iP = 0;
+		for (Dialogue d : corpus2.getDialogues()) {
+			System.out.println("Parsing dialogue " + ++iD + " of " + corpus2.getDialogues().size());
+			for (DialogueSentence s : d.getSents()) {
+				iS++;
+				if (leaveExisting && (s.getSyntax() != null)) {
+					continue;
+				}
+				if (!sents.containsKey(s.getId())) {
+					System.err.println("Can't find parsed sentence " + s);
+					continue;
+				}
+				DialogueSentence src = sents.get(s.getId());
+				Tree t = src.getSyntax();
+				if (t == null) {
+					System.err.println("Null parse found for sentence " + s + " = " + sents.get(s.getId()));
+					continue;
+				}
+				s.setSyntax(t);
+				if (!Double.isNaN(src.getSyntaxProb())) {
+					s.setSyntaxProb(src.getSyntaxProb());
+				}
+				iP++;
+			}
+			System.out.println("Copied " + iD + " dialogues, " + iP + " of " + iS + " sentences ...");
+		}
+		System.out.println("Finished (copied " + iP + " parses for " + iS + " sentences)");
+		return iP;
+	}
+
+	/**
 	 * just for testing
 	 * 
 	 * @args put in your local corpus base dir if you want
 	 */
 	public static void main(String[] args) {
-		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File("bnc_trim_ccg.corpus"));
+		DialogueCorpus corpus1 = DialogueCorpus.readFromFile(new File("bnc_trim_ccg.corpus"));
+		DialogueCorpus corpus2 = DialogueCorpus.readFromFile(new File("bnc_timed_trim.corpus"));
+		copyParses(corpus1, corpus2);
+		corpus2.writeToFile(new File("bnc_timed_trim_ccg.corpus"));
 		for (int i = 0; i < 10; i++) {
-			System.out.println(corpus.getDialogues().get(0).getTurns().get(i).getSents().get(0).getSyntax());
+			DialogueTurn t = corpus2.getDialogues().get(0).getTurns()
+					.get(Math.min(i, corpus2.getDialogues().get(0).numTurns() - 1));
+			if (t.getSents().size() > 0) {
+				System.out.println(t.getSents().get(0));
+				System.out.println(t.getSents().get(0).getSyntax());
+			}
 		}
 	}
 }

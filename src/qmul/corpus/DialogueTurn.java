@@ -79,10 +79,11 @@ public class DialogueTurn extends DialogueUnit implements Serializable {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see java.lang.Object#toString()
+	 * @see qmul.corpus.DialogueUnit#toString()
 	 */
+	@Override
 	public String toString() {
-		String s = getId() + ":";
+		String s = super.toString() + ":";
 		for (DialogueSentence sent : getSents()) {
 			s += "\n" + sent;
 		}

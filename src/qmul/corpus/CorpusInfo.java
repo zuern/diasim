@@ -20,15 +20,20 @@ public class CorpusInfo {
 	public static void main(String[] args) {
 
 		DialogueCorpus c = DialogueCorpus.readFromFile(new File(args[0]));
+		c.sanityCheck();
 		for (int i = 0; i < 10; i++) {
-			if (c.numDialogues() > i && c.getDialogues().get(i).numTurns() > i) {
-				DialogueTurn t = c.getDialogues().get(i).getTurns().get(i);
+			Dialogue d = c.getDialogues().get(i);
+			if (c.numDialogues() > i && d.numTurns() > i) {
+				DialogueTurn t = d.getTurns().get(i);
+				System.out.println("Dialogue " + i + " " + d.getId() + " turn " + i + " " + t.getId() + " "
+						+ t.getStartTime() + "-" + t.getEndTime() + " speaker " + t.getSpeaker());
 				if (t.getSents() != null && t.getSents().size() > 0) {
 					DialogueSentence s = t.getSents().get(0);
-					System.out.println("Dialogue " + i + " turn " + i + " sentence 0 has " + s.numWords() + " words "
-							+ s.numTokens());
+					System.out.println("Dialogue " + i + " " + d.getId() + " turn " + i + " " + t.getId() + " "
+							+ " sentence 0 " + s.getId() + " has " + s.numWords() + " words " + s.numTokens());
 					System.out.println(" " + s.getTranscription());
 					System.out.println(" " + s.getTokens());
+					System.out.println(" " + s.getStartTime() + "-" + s.getEndTime());
 				}
 			}
 		}

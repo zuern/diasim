@@ -10,6 +10,7 @@
  ******************************************************************************/
 package qmul.corpus;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,11 +52,11 @@ public class RandomCorpus extends DialogueCorpus {
 		@Override
 		public int compare(Dialogue arg0, Dialogue arg1) {
 			if (lengthUnits == LENGTH_IN_TURNS) {
-				return Double.compare(Math.abs(arg0.numTurns() - d.numTurns()), Math
-						.abs(arg1.numTurns() - d.numTurns()));
+				return Double.compare(Math.abs(arg0.numTurns() - d.numTurns()),
+						Math.abs(arg1.numTurns() - d.numTurns()));
 			} else if (lengthUnits == LENGTH_IN_SENTS) {
-				return Double.compare(Math.abs(arg0.numSents() - d.numSents()), Math
-						.abs(arg1.numSents() - d.numSents()));
+				return Double.compare(Math.abs(arg0.numSents() - d.numSents()),
+						Math.abs(arg1.numSents() - d.numSents()));
 			} else {
 				throw new RuntimeException("unexpected length units value " + lengthUnits);
 			}
@@ -199,7 +200,9 @@ public class RandomCorpus extends DialogueCorpus {
 	 */
 	public RandomCorpus(DialogueCorpus corpus, int randType, int padType, int lengthUnits, boolean matchGenre,
 			boolean avoidSelf, int fixedSpeakerOffset) {
-		super(corpus.getId() + "-" + Math.abs(random.nextInt()), corpus.getDir());
+		// super(corpus.getId() + "-" + Math.abs(random.nextInt()), corpus.getDir());
+		// no need for a real directory, and easier to use something guaranteed to exist
+		super(corpus.getId() + "-" + Math.abs(random.nextInt()), new File(System.getProperty("user.dir")));
 		this.rawCorpus = corpus;
 		this.randType = randType;
 		this.padType = padType;
@@ -317,12 +320,24 @@ public class RandomCorpus extends DialogueCorpus {
 						t.setOriginalId(tRaw.getId());
 						t.setOriginalDialogue(tRaw.getDialogue());
 						usedSpeakers.add(tRaw.getSpeaker());
+						if (!Double.isNaN(tRaw.getStartTime())) {
+							t.setStartTime(tRaw.getStartTime());
+						}
+						if (!Double.isNaN(tRaw.getEndTime())) {
+							t.setEndTime(tRaw.getEndTime());
+						}
 						for (DialogueSentence sRaw : tRaw.getSents()) {
 							DialogueSentence s = d.addSent(sRaw.getNum(), t, sRaw.getTranscription(), sRaw.getSyntax());
 							s.setOriginalSpeaker(sRaw.getSpeaker());
 							s.setOriginalId(sRaw.getId());
 							if (sRaw.getTokens() != null) {
 								s.setTokens(sRaw.getTokens());
+							}
+							if (!Double.isNaN(sRaw.getStartTime())) {
+								s.setStartTime(sRaw.getStartTime());
+							}
+							if (!Double.isNaN(sRaw.getEndTime())) {
+								s.setEndTime(sRaw.getEndTime());
 							}
 						}
 						// System.out.println("Keeping speaker " + tRaw.getSpeaker() + ", copied from turn " +
@@ -386,8 +401,8 @@ public class RandomCorpus extends DialogueCorpus {
 						ArrayList<Integer> myTurnOrder = new ArrayList<Integer>();
 						ArrayList<Integer> origTurnOrder = new ArrayList<Integer>();
 						for (int turnIndex = 0; turnIndex < dRand.numTurns(); turnIndex++) {
-							if (dRand.getTurns().get(turnIndex).getSpeaker().equals(
-									randType == RAND_SAME_SPEAKER ? fixedSpeaker : tRaw.getSpeaker())) {
+							if (dRand.getTurns().get(turnIndex).getSpeaker()
+									.equals(randType == RAND_SAME_SPEAKER ? fixedSpeaker : tRaw.getSpeaker())) {
 								myTurnOrder.add(turnIndex);
 								origTurnOrder.add(turnIndex);
 							}
@@ -547,13 +562,25 @@ public class RandomCorpus extends DialogueCorpus {
 						t.setOriginalId(tRand.getId());
 						t.setOriginalDialogue(tRand.getDialogue());
 						usedSpeakers.add(tRand.getSpeaker());
+						if (!Double.isNaN(tRand.getStartTime())) {
+							t.setStartTime(tRand.getStartTime());
+						}
+						if (!Double.isNaN(tRand.getEndTime())) {
+							t.setEndTime(tRand.getEndTime());
+						}
 						for (DialogueSentence sRand : tRand.getSents()) {
-							DialogueSentence s = d.addSent(sRand.getNum(), t, sRand.getTranscription(), sRand
-									.getSyntax());
+							DialogueSentence s = d.addSent(sRand.getNum(), t, sRand.getTranscription(),
+									sRand.getSyntax());
 							s.setOriginalSpeaker(sRand.getSpeaker());
 							s.setOriginalId(sRand.getId());
 							if (sRand.getTokens() != null) {
 								s.setTokens(sRand.getTokens());
+							}
+							if (!Double.isNaN(sRand.getStartTime())) {
+								s.setStartTime(sRand.getStartTime());
+							}
+							if (!Double.isNaN(sRand.getEndTime())) {
+								s.setEndTime(sRand.getEndTime());
 							}
 						}
 					}
@@ -592,6 +619,12 @@ public class RandomCorpus extends DialogueCorpus {
 					t.setOriginalSpeaker(sRaw.getSpeaker());
 					t.setOriginalId(sRaw.getTurn().getId());
 					usedSpeakers.add(sRaw.getSpeaker());
+					if (!Double.isNaN(sRaw.getTurn().getStartTime())) {
+						t.setStartTime(sRaw.getTurn().getStartTime());
+					}
+					if (!Double.isNaN(sRaw.getTurn().getEndTime())) {
+						t.setEndTime(sRaw.getTurn().getEndTime());
+					}
 					DialogueSentence s = d.addSent(sRaw.getNum(), t, sRaw.getTranscription(), sRaw.getSyntax());
 					s.setOriginalSpeaker(sRaw.getSpeaker());
 					s.setOriginalId(sRaw.getId());
@@ -600,6 +633,12 @@ public class RandomCorpus extends DialogueCorpus {
 					}
 					// System.out.println("Keeping speaker " + tRaw.getSpeaker() + ", copied from turn " +
 					// tRaw.getId());
+					if (!Double.isNaN(sRaw.getStartTime())) {
+						s.setStartTime(sRaw.getStartTime());
+					}
+					if (!Double.isNaN(sRaw.getEndTime())) {
+						s.setEndTime(sRaw.getEndTime());
+					}
 				} else {
 					// otherwise choose a random dialogue; saving the choice if < RAND_OTHER_TURNS
 					Dialogue dRand = (randType < RAND_OTHER_TURNS ? myDialogues.get(sRaw.getSpeaker()) : dRaw);
@@ -750,11 +789,23 @@ public class RandomCorpus extends DialogueCorpus {
 					t.setOriginalId(sRaw.getTurn().getId());
 					t.setOriginalDialogue(sRand.getDialogue());
 					usedSpeakers.add(sRand.getSpeaker());
+					if (!Double.isNaN(sRaw.getTurn().getStartTime())) {
+						t.setStartTime(sRaw.getTurn().getStartTime());
+					}
+					if (!Double.isNaN(sRaw.getTurn().getEndTime())) {
+						t.setEndTime(sRaw.getTurn().getEndTime());
+					}
 					DialogueSentence s = d.addSent(sRand.getNum(), t, sRand.getTranscription(), sRand.getSyntax());
 					s.setOriginalSpeaker(sRand.getSpeaker());
 					s.setOriginalId(sRand.getId());
 					if (sRand.getTokens() != null) {
 						s.setTokens(sRand.getTokens());
+					}
+					if (!Double.isNaN(sRand.getStartTime())) {
+						s.setStartTime(sRand.getStartTime());
+					}
+					if (!Double.isNaN(sRand.getEndTime())) {
+						s.setEndTime(sRand.getEndTime());
 					}
 				}
 			}
@@ -799,6 +850,16 @@ public class RandomCorpus extends DialogueCorpus {
 			}
 		}
 		return null;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see qmul.corpus.DialogueCorpus#topTenSynProductions()
+	 */
+	@Override
+	public HashSet<String> topTenSynProductions() {
+		return rawCorpus.topTenSynProductions();
 	}
 
 	/**

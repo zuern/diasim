@@ -15,11 +15,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * A collection of {@link Dialogue}s
@@ -141,9 +146,14 @@ public abstract class DialogueCorpus implements Serializable {
 	public boolean writeToFile(File file) {
 		ObjectOutputStream out;
 		try {
-			out = new ObjectOutputStream(new FileOutputStream(file));
+			OutputStream outs = new FileOutputStream(file);
+			if (file.getName().endsWith(".gz")) {
+				outs = new GZIPOutputStream(outs);
+			}
+			out = new ObjectOutputStream(outs);
 			out.writeObject(this);
 			System.out.println("Saved corpus to file " + file);
+			out.close();
 			return true;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -160,12 +170,17 @@ public abstract class DialogueCorpus implements Serializable {
 	 */
 	public static DialogueCorpus readFromFile(File file) {
 		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+			InputStream ins = new FileInputStream(file);
+			if (file.getName().endsWith(".gz")) {
+				ins = new GZIPInputStream(ins);
+			}
+			ObjectInputStream in = new ObjectInputStream(ins);
 			System.out.print("Reading corpus from file " + file + " ... ");
 			DialogueCorpus c = (DialogueCorpus) in.readObject();
 			System.out.println("done.");
 			System.out.println("Read corpus with " + c.numDialogues() + " dialogues, " + c.numTurns() + " turns, "
 					+ c.numSents() + " sentences, " + c.numWords() + " words.");
+			in.close();
 			return c;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -234,6 +249,9 @@ public abstract class DialogueCorpus implements Serializable {
 		System.out.println("Got dialogue " + dialogue.getId() + " with " + dialogue.numTurns() + " turns, "
 				+ dialogue.numSents() + " sentences, " + dialogue.numSpeakers() + " speakers, " + dialogue.getGenre()
 				+ " genre");
+		if (!Float.isNaN(dialogue.getStartTime())) {
+			System.out.println("Start time " + dialogue.getStartTime() + " end time " + dialogue.getEndTime());
+		}
 		if (badNumSpeakers(dialogue)) {
 			removeDialogue(dialogue);
 			System.out.println("Removing dialogue " + dialogue.getId() + " - bad number of speakers "
@@ -468,6 +486,13 @@ public abstract class DialogueCorpus implements Serializable {
 	@Deprecated
 	public void setMinGenreCount(int minGenreCount) {
 		this.minGenreCount = minGenreCount;
+	}
+
+	/**
+	 * @return the set of 10 most common syntactic rules
+	 */
+	public HashSet<String> topTenSynProductions() {
+		return null;
 	}
 
 	/**

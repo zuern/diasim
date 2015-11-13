@@ -17,7 +17,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -305,6 +307,17 @@ public class DCPSECorpus extends DialogueCorpus {
 			System.err.println("Error reading sentence line" + e.getMessage());
 			return false;
 		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see qmul.corpus.DialogueCorpus#topTenSynProductions()
+	 */
+	@Override
+	public HashSet<String> topTenSynProductions() {
+		return new HashSet<String>(Arrays.asList("NP:PRON", "VP:V", "AVP:ADV", "PP:PREP:NP", "DTP:ART", "NP:DTP:N",
+				"NP:N", "VP:AUX:V", "AJP:ADJ", "DTP:PRON"));
 	}
 
 	/**

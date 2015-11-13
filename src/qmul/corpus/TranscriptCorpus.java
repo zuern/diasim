@@ -13,6 +13,8 @@ package qmul.corpus;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,6 +31,22 @@ public abstract class TranscriptCorpus extends DialogueCorpus {
 
 	public TranscriptCorpus(String id, File file, boolean dynamic) {
 		super(id, file, dynamic);
+	}
+
+	/**
+	 * @return a list of [DATag, SpeakerID, Transcript], or null if no match
+	 */
+	protected List<String> matchLine(String line, String dialogueId) {
+		Matcher m = LINE_PAT.matcher(line);
+		if (m.matches()) {
+			String daTags = m.group(1);
+			String spkId = m.group(2);
+			String trans = m.group(3).trim();
+			String[] s = { daTags, spkId, trans };
+			return Arrays.asList(s);
+		} else {
+			return null;
+		}
 	}
 
 	/*
@@ -49,21 +67,25 @@ public abstract class TranscriptCorpus extends DialogueCorpus {
 		}
 		String id = name.replaceAll("\\.txt", "");
 		Dialogue d = addDialogue(id, getGenre());
+		DialogueTurn t = null;
+		DialogueSpeaker lastSpk = null;
 		for (String line : lines) {
 			if (line.isEmpty()) {
 				continue;
 			}
-			Matcher m = LINE_PAT.matcher(line);
-			if (m.matches()) {
-				String daTags = m.group(1);
-				String spkId = m.group(2);
-				String trans = m.group(3).trim();
+			List<String> matches = matchLine(line, id);
+			if (matches != null) {
+				String daTags = matches.get(0);
+				String spkId = matches.get(1);
+				String trans = matches.get(2);
 				DialogueSpeaker spk = getSpeakerMap().get(spkId);
 				if (spk == null) {
 					spk = new DialogueSpeaker(spkId, null, null, null, null, null);
 					getSpeakerMap().put(spkId, spk);
 				}
-				DialogueTurn t = d.addTurn(-1, spk);
+				if ((t == null) || (!spk.equals(lastSpk))) {
+					t = d.addTurn(-1, spk);
+				}
 				DialogueSentence s = d.addSent(-1, t, trans, null);
 				if (daTags != null && !daTags.isEmpty()) {
 					for (String daTag : daTags.split(",")) {
@@ -71,6 +93,7 @@ public abstract class TranscriptCorpus extends DialogueCorpus {
 						t.getDaTags().add(daTag);
 					}
 				}
+				lastSpk = spk;
 				// System.out.println(s.getId() + " " + s.getDaTags());
 			} else {
 				System.err.println("WARNING strange line " + line);

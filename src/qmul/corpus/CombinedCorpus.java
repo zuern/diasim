@@ -10,9 +10,11 @@
  ******************************************************************************/
 package qmul.corpus;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * A corpus made of a collection of other corpora
@@ -26,7 +28,8 @@ public class CombinedCorpus extends DialogueCorpus {
 	private Collection<DialogueCorpus> corpora;
 
 	public CombinedCorpus(Collection<DialogueCorpus> corpora) {
-		super(makeId(corpora), corpora.iterator().next().getDir());
+		// no need for a real directory, and easier to use something guaranteed to exist
+		super(makeId(corpora), new File(System.getProperty("user.dir"))); // corpora.iterator().next().getDir());
 		this.corpora = corpora;
 	}
 
@@ -152,6 +155,16 @@ public class CombinedCorpus extends DialogueCorpus {
 			map.putAll(corpus.getSpeakerMap());
 		}
 		return map;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see qmul.corpus.DialogueCorpus#topTenSynProductions()
+	 */
+	@Override
+	public HashSet<String> topTenSynProductions() {
+		return corpora.isEmpty() ? super.topTenSynProductions() : corpora.iterator().next().topTenSynProductions();
 	}
 
 	/**

@@ -29,6 +29,7 @@ public class SentenceSyntacticSimilarityMeasure implements SimilarityMeasure<Dia
 	 */
 	public SentenceSyntacticSimilarityMeasure() {
 		super();
+		reset();
 	}
 
 	/**
@@ -36,7 +37,7 @@ public class SentenceSyntacticSimilarityMeasure implements SimilarityMeasure<Dia
 	 *            specify the {@link TreeKernel} kernel type (subtrees/subset trees/syn rules)
 	 */
 	public SentenceSyntacticSimilarityMeasure(int kernelType) {
-		super();
+		this();
 		this.kernelType = kernelType;
 	}
 
@@ -62,7 +63,8 @@ public class SentenceSyntacticSimilarityMeasure implements SimilarityMeasure<Dia
 	 */
 	@Override
 	public void reset() {
-		// nothing to do
+//		TreeKernel.clearAllowedProductions();
+//		TreeKernel.clearBannedProductions();
 	}
 
 	/*

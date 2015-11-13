@@ -16,6 +16,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,7 +30,7 @@ import edu.stanford.nlp.trees.TreeReader;
 import edu.stanford.nlp.util.Filter;
 
 /**
- * A {@link DialogueCorpus} implementation for SWBD
+ * A {@link DialogueCorpus} implementation for SWBD as in the Penn Treebank: 1,126 dialogues with parse trees
  * 
  * @author mpurver
  */
@@ -262,18 +264,31 @@ public class SwitchboardCorpus extends DialogueCorpus {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see qmul.corpus.DialogueCorpus#topTenSynProductions()
+	 */
+	@Override
+	public HashSet<String> topTenSynProductions() {
+		return new HashSet<String>(Arrays.asList("NP:PRP", "S:NP:VP", "INTJ:UH", "PP:IN:NP", "ADVP:RB", "NP:DT:NN",
+				"VP:VB:NP", "VP:VB", "S:VP", "NP:NN"));
+	}
+
 	/**
 	 * just for testing
 	 * 
 	 * @args put in your local corpus base dir if you want
 	 */
 	public static void main(String[] args) {
-		if (args.length > 0) {
+		SwitchboardCorpus c = null;
+		if ((args.length > 0) && !args[0].equals("dummy")) {
 			System.out.println("Found arg, using non-default base dir " + args[0]);
-			new SwitchboardCorpus(args[0]);
+			c = new SwitchboardCorpus(args[0]);
 		} else {
-			new SwitchboardCorpus();
+			c = new SwitchboardCorpus();
 		}
+		c.writeToFile(new File("swbd.corpus.gz"));
 	}
 
 	/**

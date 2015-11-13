@@ -42,6 +42,8 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.RefineryUtilities;
 
+import csli.util.dsp.Smoother;
+import csli.util.dsp.SmoothingFactory;
 import qmul.corpus.BNCCorpus;
 import qmul.corpus.CombinedCorpus;
 import qmul.corpus.DCPSECorpus;
@@ -55,8 +57,8 @@ import qmul.corpus.RandomCorpus;
 import qmul.corpus.SwitchboardCorpus;
 import qmul.util.ApacheStatistics;
 import qmul.util.MapUtil;
-import qmul.util.MathUtil;
 import qmul.util.MapUtil.DescendingComparator;
+import qmul.util.MathUtil;
 import qmul.util.parse.CreateTreeFromDCPSE;
 import qmul.util.parse.CreateTreeFromSWBD;
 import qmul.util.similarity.SimilarityMeasure;
@@ -72,8 +74,6 @@ import qmul.window.SameSpeakerSentenceWindower;
 import qmul.window.SameSpeakerTurnWindower;
 import qmul.window.SentenceWindower;
 import qmul.window.TurnWindower;
-import csli.util.dsp.Smoother;
-import csli.util.dsp.SmoothingFactory;
 
 /**
  * A general class for similarity testing over a {@link DialogueCorpus}
@@ -125,10 +125,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 * @return a list of {@link Double} scores, one per {@link DialogueWindower} step (e.g. dialogue turn)
 	 */
 	public List<Double> processDialogue(Dialogue d, HSSFWorkbook wb, HashMap<String, ArrayList<Double>> speakerScores,
-			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN,
-			HashMap<String, Integer> spkUnits, HashMap<String, Integer> totUnits, HashMap<String, Integer> spkWords,
-			HashMap<String, Integer> totWords, HashMap<String, Integer> spkTokens, HashMap<String, Integer> totTokens,
-			HSSFWorkbook wbcounts, HashMap<String, HashMap<Object, Integer>> allCounts,
+			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN, MetricsMap spkMetrics,
+			MetricsMap totMetrics, HSSFWorkbook wbcounts, HashMap<String, HashMap<Object, Integer>> allCounts,
 			HashMap<String, HashMap<Object, Integer>> commonCounts, HashMap<Object, Integer> diaAllCounts,
 			HashMap<Object, Integer> diaCommonCounts) {
 		win.setDialogue(d);
@@ -172,6 +170,9 @@ public class AlignmentTester<X extends DialogueUnit> {
 						originalDia = d.getId().replaceFirst("-\\d+$", "");
 					}
 					if (!originalSpkKey.contains(originalDia)) {
+						if (!originalDia.contains(":")) {
+							throw new RuntimeException("can't find super-dialogue, no : in " + originalDia);
+						}
 						String originalSuperDia = originalDia.substring(0, originalDia.lastIndexOf(":"));
 						if (originalSpkKey.contains(originalSuperDia)) {
 							originalSpkKey = originalSpkKey.replace(originalSuperDia, originalDia);
@@ -209,14 +210,16 @@ public class AlignmentTester<X extends DialogueUnit> {
 					} else if (right.size() > 0) {
 						isTurns = (right.get(0) instanceof DialogueTurn);
 					}
-					spkUnits.put(spkKey, 0);
-					totUnits.put(spkKey, (isTurns ? d.numTurns() : d.numSents()));
-					spkWords.put(spkKey, 0);
-					totWords.put(spkKey, d.numWords());
-					spkTokens.put(spkKey, 0);
-					totTokens.put(spkKey, d.numTokens());
+					spkMetrics.setNumUnits(spkKey, 0);
+					totMetrics.setNumUnits(d.getId(), (isTurns ? d.numTurns() : d.numSents()));
+					spkMetrics.setNumWords(spkKey, 0);
+					totMetrics.setNumWords(d.getId(), d.numWords());
+					spkMetrics.setNumTokens(spkKey, 0);
+					totMetrics.setNumTokens(d.getId(), d.numTokens());
 				}
 				int iLeft = 0;
+				double offset = Double.NaN;
+				boolean gotOffset = false;
 				for (X l : left) {
 					double s = sim.similarity(l, r);
 					// System.out.println("Siml = " + s + " for l:" + l.getId() + " r:" + r.getId());
@@ -255,6 +258,13 @@ public class AlignmentTester<X extends DialogueUnit> {
 						// average over "window"
 						iLeft++;
 					}
+					if (!gotOffset) {
+						offset = r.getStartTime() - l.getEndTime();
+						gotOffset = true;
+						// if (!Double.isNaN(offset)) {
+						// System.out.println("Offset = " + offset + " for l:" + l.getId() + " r:" + r.getId());
+						// }
+					}
 				}
 				// print number sents/words/tokens
 				iCol += (win.getLeftWindowSize() - left.size() + 1);
@@ -264,6 +274,23 @@ public class AlignmentTester<X extends DialogueUnit> {
 				cell.setCellValue(r.numWords());
 				cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
 				cell.setCellValue(r.numTokens());
+				iCol += 1;
+				if (!Double.isNaN(offset)) {
+					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell.setCellValue(offset);
+				} else {
+					iCol++;
+				}
+				double wordRate = (double) (r.getEndTime() - r.getStartTime()) / (double) r.numWords();
+				if (r.numWords() == 0) {
+					wordRate = Double.NaN; // on some OSs this doesn't happen in the calc above
+				}
+				if (!Double.isNaN(wordRate)) {
+					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell.setCellValue(wordRate);
+				} else {
+					iCol++;
+				}
 				// make sure we counted this one - the first one can get missed if leftWindow empty
 				if ((wbcounts != null) && !counted.contains(r)) {
 					sim.similarity(r, r);
@@ -272,9 +299,21 @@ public class AlignmentTester<X extends DialogueUnit> {
 					MapUtil.addAll(allCounts.get(d.getGenre()), sim.rawCountsA());
 					counted.add(r);
 				}
-				spkUnits.put(spkKey, spkUnits.get(spkKey) + 1);
-				spkWords.put(spkKey, spkWords.get(spkKey) + r.numWords());
-				spkTokens.put(spkKey, spkTokens.get(spkKey) + r.numTokens());
+				spkMetrics.setNumUnits(spkKey, spkMetrics.getNumUnits(spkKey) + 1);
+				spkMetrics.setNumWords(spkKey, spkMetrics.getNumWords(spkKey) + r.numWords());
+				spkMetrics.setNumTokens(spkKey, spkMetrics.getNumTokens(spkKey) + r.numTokens());
+				if (!Double.isNaN(offset)) {
+					spkMetrics.setTurnOffset(spkKey, spkMetrics.getTurnOffset(spkKey) + offset);
+					spkMetrics.setNumTurnOffsets(spkKey, spkMetrics.getNumTurnOffsets(spkKey) + 1);
+					totMetrics.setTurnOffset(d.getId(), totMetrics.getTurnOffset(d.getId()) + offset);
+					totMetrics.setNumTurnOffsets(d.getId(), totMetrics.getNumTurnOffsets(d.getId()) + 1);
+				}
+				if (!Double.isNaN(wordRate)) {
+					spkMetrics.setWordRate(spkKey, spkMetrics.getWordRate(spkKey) + wordRate);
+					spkMetrics.setNumWordRates(spkKey, spkMetrics.getNumWordRates(spkKey) + 1);
+					totMetrics.setWordRate(d.getId(), totMetrics.getWordRate(d.getId()) + wordRate);
+					totMetrics.setNumWordRates(d.getId(), totMetrics.getNumWordRates(d.getId()) + 1);
+				}
 			}
 			scores.add((n == 0.0) ? 0.0 : (score / n));
 		} while (win.advance());
@@ -285,13 +324,15 @@ public class AlignmentTester<X extends DialogueUnit> {
 				HSSFRow row = sheet.createRow(iRow++);
 				int iCol = 0;
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(spk.getId()));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-						new HSSFRichTextString(originalSpks.get(spkKey)));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+						.setCellValue(new HSSFRichTextString(originalSpks.get(spkKey)));
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Mean"));
 				for (int i = 0; i < win.getLeftWindowSize(); i++) {
 					if (speakerN.get(spkKey).get(i) > 0) {
-						row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
-								speakerScores.get(spkKey).get(i) / speakerN.get(spkKey).get(i));
+						row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+								.setCellValue(speakerScores.get(spkKey).get(i) / speakerN.get(spkKey).get(i));
+					} else {
+						iCol++;
 					}
 					// System.out
 					// .println("score " + i + " for speaker " + spkKey + "=" + speakerScores.get(spkKey).get(i));
@@ -301,11 +342,16 @@ public class AlignmentTester<X extends DialogueUnit> {
 				}
 				iCol++;
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
-						(double) spkUnits.get(spkKey) / (double) spkUnits.get(spkKey));
+						(double) spkMetrics.getNumUnits(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
-						(double) spkWords.get(spkKey) / (double) spkUnits.get(spkKey));
+						(double) spkMetrics.getNumWords(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
-						(double) spkTokens.get(spkKey) / (double) spkUnits.get(spkKey));
+						(double) spkMetrics.getNumTokens(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
+				iCol++;
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+						(double) spkMetrics.getTurnOffset(spkKey) / (double) spkMetrics.getNumTurnOffsets(spkKey));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+						(double) spkMetrics.getWordRate(spkKey) / (double) spkMetrics.getNumWordRates(spkKey));
 			}
 		}
 		if (wbcounts != null) {
@@ -368,16 +414,16 @@ public class AlignmentTester<X extends DialogueUnit> {
 			row = sheet.createRow(iRow++);
 			iCol = 0;
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getId()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-					new HSSFRichTextString(os == null ? "" : os.getId()));
+			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+					.setCellValue(new HSSFRichTextString(os == null ? "" : os.getId()));
 			s = (os == null ? s : os);
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getFirstName()));
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getLastName()));
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getGender()));
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getAge()));
 			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getOccupation()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-					new HSSFRichTextString(corpus.getGenreMap().get(s.getId().split(":")[0])));
+			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+					.setCellValue(new HSSFRichTextString(corpus.getGenreMap().get(s.getId().split(":")[0])));
 		}
 		iRow++;
 
@@ -395,6 +441,9 @@ public class AlignmentTester<X extends DialogueUnit> {
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num sents"));
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num words"));
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num tok words"));
+		iCol += 1;
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Offset time"));
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Time per word"));
 		return iRow;
 	}
 
@@ -444,12 +493,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 		System.out.println("Smoothing " + smoother + ", normalisation=" + normalisation);
 		System.out.println("Processing corpus " + corpus.getId() + " with " + corpus.numDialogues() + " dialogues ...");
 		HashMap<String, String> originalSpks = new HashMap<String, String>();
-		HashMap<String, Integer> spkUnits = new HashMap<String, Integer>();
-		HashMap<String, Integer> totUnits = new HashMap<String, Integer>();
-		HashMap<String, Integer> spkWords = new HashMap<String, Integer>();
-		HashMap<String, Integer> totWords = new HashMap<String, Integer>();
-		HashMap<String, Integer> spkTokens = new HashMap<String, Integer>();
-		HashMap<String, Integer> totTokens = new HashMap<String, Integer>();
+		MetricsMap spkMetrics = new MetricsMap();
+		MetricsMap totMetrics = new MetricsMap();
 		HashMap<String, ArrayList<Double>> speakerScores = new HashMap<String, ArrayList<Double>>();
 		HashMap<String, ArrayList<Double>> speakerN = new HashMap<String, ArrayList<Double>>();
 		// maps from genres to maps from objects to integers
@@ -470,9 +515,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 			// }
 			HashMap<Object, Integer> diaAllCounts = new HashMap<Object, Integer>();
 			HashMap<Object, Integer> diaCommonCounts = new HashMap<Object, Integer>();
-			List<Double> subScores = processDialogue(d, wb, speakerScores, originalSpks, speakerN, spkUnits, totUnits,
-					spkWords, totWords, spkTokens, totTokens, wbcounts, allCounts, commonCounts, diaAllCounts,
-					diaCommonCounts);
+			List<Double> subScores = processDialogue(d, wb, speakerScores, originalSpks, speakerN, spkMetrics,
+					totMetrics, wbcounts, allCounts, commonCounts, diaAllCounts, diaCommonCounts);
 			System.out.println("Got " + subScores.size() + " scores for dialogue " + d.getId() + ": " + subScores);
 			scores.add(subScores);
 			// get stats
@@ -485,8 +529,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 			stats.addValues(subScores);
 		}
 		if (wb != null) {
-			printSummarySheet(wb, null, speakerScores, originalSpks, speakerN, spkUnits, totUnits, spkWords, totWords,
-					spkTokens, totTokens, corpus instanceof CombinedCorpus);
+			printSummarySheet(wb, null, speakerScores, originalSpks, speakerN, spkMetrics, totMetrics,
+					corpus instanceof CombinedCorpus);
 			if (counts) {
 				printSummaryCountSheet(wbcounts, null, allCounts, commonCounts);
 			}
@@ -519,8 +563,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 				e.printStackTrace();
 				System.exit(0);
 			}
-			printSummarySheet(summaryWb, runId, speakerScores, originalSpks, speakerN, spkUnits, totUnits, spkWords,
-					totWords, spkTokens, totTokens, corpus instanceof CombinedCorpus);
+			printSummarySheet(summaryWb, runId, speakerScores, originalSpks, speakerN, spkMetrics, totMetrics,
+					corpus instanceof CombinedCorpus);
 			if (counts) {
 				printSummaryCountSheet(countsWb, runId, allCounts, commonCounts);
 			}
@@ -539,8 +583,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 		System.out.println("Mean over all dialogues: " + MathUtil.mean(means));
 		System.out.println("Mean, SD over all dialogues: " + stats.getMean() + " " + stats.getStandardDeviation());
 		ApacheStatistics meanStats = new ApacheStatistics(means);
-		System.out.println("Mean, SD over all dialogue means: " + meanStats.getMean() + " "
-				+ meanStats.getStandardDeviation());
+		System.out.println(
+				"Mean, SD over all dialogue means: " + meanStats.getMean() + " " + meanStats.getStandardDeviation());
 		return scores;
 	}
 
@@ -573,10 +617,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 * @param speakerN
 	 */
 	private void printSummarySheet(HSSFWorkbook wb, String sheetName, HashMap<String, ArrayList<Double>> speakerScores,
-			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN,
-			HashMap<String, Integer> spkUnits, HashMap<String, Integer> totUnits, HashMap<String, Integer> spkWords,
-			HashMap<String, Integer> totWords, HashMap<String, Integer> spkTokens, HashMap<String, Integer> totTokens,
-			boolean pairedCorpus) {
+			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN, MetricsMap spkMetrics,
+			MetricsMap totMetrics, boolean pairedCorpus) {
 		sheetName = (sheetName == null ? "Summary" : shorten(sheetName));
 		System.out.println("Checking workbook " + wb + " for sheet " + sheetName);
 		HSSFSheet sheet = wb.getSheet(sheetName);
@@ -611,10 +653,14 @@ public class AlignmentTester<X extends DialogueUnit> {
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue #words"));
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker #tokens"));
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue #tokens"));
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker avg offset"));
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue avg offset"));
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker avg wordrate"));
+		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue avg wordrate"));
 		iCol++;
 		for (int i = 0; i < getWin().getLeftWindowSize(); i++) {
-			row.createCell(i + iCol, HSSFCell.CELL_TYPE_STRING).setCellValue(
-					new HSSFRichTextString("Mean i-" + (i + 1)));
+			row.createCell(i + iCol, HSSFCell.CELL_TYPE_STRING)
+					.setCellValue(new HSSFRichTextString("Mean i-" + (i + 1)));
 		}
 		// now means per speaker
 		List<String> spks = new ArrayList<String>(speakerScores.keySet());
@@ -642,19 +688,44 @@ public class AlignmentTester<X extends DialogueUnit> {
 				// System.out.println("match " + pre + " " + suf);
 				row = sheet.createRow(iRow++);
 				iCol = 0;
+				String dId = spk.replaceFirst("(.*):.*", "$1");
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-						new HSSFRichTextString(corpus.getGenreMap().get(spk.split(":")[0])));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-						new HSSFRichTextString(originalSpks.get(spk)));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+						.setCellValue(new HSSFRichTextString(corpus.getGenreMap().get(spk.split(":")[0])));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+						.setCellValue(new HSSFRichTextString(originalSpks.get(spk)));
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
 						new HSSFRichTextString(corpus.getGenreMap().get(originalSpks.get(spk).split(":")[0])));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkUnits.get(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totUnits.get(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkWords.get(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totWords.get(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkTokens.get(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totTokens.get(spk));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumUnits(spk));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumUnits(dId));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumWords(spk));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumWords(dId));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumTokens(spk));
+				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumTokens(dId));
+				if (Double.isNaN(spkMetrics.getTurnOffset(spk)) || spkMetrics.getNumTurnOffsets(spk) == 0) {
+					iCol++;
+				} else {
+					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+							.setCellValue(spkMetrics.getTurnOffset(spk) / (double) spkMetrics.getNumTurnOffsets(spk));
+				}
+				if (Double.isNaN(totMetrics.getTurnOffset(dId)) || totMetrics.getNumTurnOffsets(dId) == 0) {
+					iCol++;
+				} else {
+					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+							.setCellValue(totMetrics.getTurnOffset(dId) / (double) totMetrics.getNumTurnOffsets(dId));
+				}
+				if (Double.isNaN(spkMetrics.getWordRate(spk)) || spkMetrics.getNumWordRates(spk) == 0) {
+					iCol++;
+				} else {
+					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+							.setCellValue(spkMetrics.getWordRate(spk) / (double) spkMetrics.getNumWordRates(spk));
+				}
+				if (Double.isNaN(totMetrics.getWordRate(dId)) || totMetrics.getNumWordRates(dId) == 0) {
+					iCol++;
+				} else {
+					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+							.setCellValue(totMetrics.getWordRate(dId) / (double) totMetrics.getNumWordRates(dId));
+				}
 				iCol++;
 				for (int i = 0; i < speakerScores.get(spk).size(); i++) {
 					if (speakerN.get(spk).get(i) > 0.0) {
@@ -669,7 +740,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 		System.out.println("Matched " + nMatch + " of " + nAll);
 		// and a final row for overall means
 		row = sheet.createRow(iRow++);
-		iCol = 10;
+		iCol = 14;
 		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Overall"));
 		for (int i = 0; i < getWin().getLeftWindowSize(); i++) {
 			means.set(i, means.get(i) / nums.get(i));
@@ -681,7 +752,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 * Print a summary sheet on the (gulp) excel spreadsheet
 	 */
 	private void printSummaryCountSheet(HSSFWorkbook wb, String sheetName,
-			HashMap<String, HashMap<Object, Integer>> allCounts, HashMap<String, HashMap<Object, Integer>> commonCounts) {
+			HashMap<String, HashMap<Object, Integer>> allCounts,
+			HashMap<String, HashMap<Object, Integer>> commonCounts) {
 		sheetName = (sheetName == null ? "Summary" : shorten(sheetName));
 		System.out.println("Checking workbook " + wb + " for sheet " + sheetName);
 		HSSFSheet sheet = wb.getSheet(sheetName);
@@ -712,10 +784,10 @@ public class AlignmentTester<X extends DialogueUnit> {
 		for (String genre : allCounts.keySet()) {
 			if (genre.isEmpty())
 				continue;
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-					new HSSFRichTextString(genre + " overall count"));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-					new HSSFRichTextString(genre + " common count"));
+			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+					.setCellValue(new HSSFRichTextString(genre + " overall count"));
+			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
+					.setCellValue(new HSSFRichTextString(genre + " common count"));
 		}
 		ArrayList<Object> keys = new ArrayList<Object>(allCounts.get("").keySet());
 		Collections.sort(keys, new DescendingComparator<Object>(allCounts.get("")));
@@ -807,8 +879,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 			double ind = j * (double) (raw.size() - 1) / (double) (n - 1);
 			double last = Math.floor(ind);
 			double next = Math.ceil(ind);
-			double val = (last == next) ? raw.get((int) last) : raw.get((int) last) * (next - ind)
-					+ raw.get((int) next) * (ind - last);
+			double val = (last == next) ? raw.get((int) last)
+					: raw.get((int) last) * (next - ind) + raw.get((int) next) * (ind - last);
 			// System.out.println("I " + j + " " + ind + " " + last + " " + raw.get((int) last) + " " + next + " "
 			// + raw.get((int) next) + " " + val);
 			cooked.add((int) j, val);
@@ -917,7 +989,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 * @param randType
 	 *            "" for the raw corpus, "random1", "random2" etc for a defined randomisation type
 	 * @param simType
-	 *            "lex" or "syn"
+	 *            "lex" or "syn", or "syntop", "synbot" for top 10/other rules only
 	 * @param unitType
 	 *            "turn" or "sent"
 	 * @param winType
@@ -967,13 +1039,13 @@ public class AlignmentTester<X extends DialogueUnit> {
 				} else {
 					att.setSim(new TurnAverageSimilarityMeasure(new SentenceLexicalTokenSimilarityMeasure()));
 				}
-			} else if (simType.equals("syn")) {
+			} else if (simType.startsWith("syn")) {
 				if (unitType.equals("tuco")) {
-					att.setSim(new TurnConcatSimilarityMeasure(new SentenceSyntacticSimilarityMeasure(
-							TreeKernel.SYN_TREES)));
+					att.setSim(new TurnConcatSimilarityMeasure(
+							new SentenceSyntacticSimilarityMeasure(TreeKernel.SYN_TREES)));
 				} else {
-					att.setSim(new TurnAverageSimilarityMeasure(new SentenceSyntacticSimilarityMeasure(
-							TreeKernel.SYN_TREES)));
+					att.setSim(new TurnAverageSimilarityMeasure(
+							new SentenceSyntacticSimilarityMeasure(TreeKernel.SYN_TREES)));
 				}
 			} else if (simType.equals("gries")) {
 				// HACK windower doesn't control person for Gries-style similarity
@@ -1058,10 +1130,10 @@ public class AlignmentTester<X extends DialogueUnit> {
 		// // use something like this to test on a randomised version and save it to file for later replication
 		// DialogueCorpus corpus = new RandomCorpus(new DCPSECorpus(2, 2, 0, 0), RandomCorpus.RAND_OTHER_SPEAKERS,
 		// RandomCorpus.PAD_CUT);
-		// corpus.writeToFile(new File(corpusName + ".corpus"));
+		// corpus.writeToFile(new File(corpusName + ".corpus.gz"));
 		// at.setCorpus(corpus);
 		// // use something like this to use a previously generated random corpus
-		// at.setCorpus(DialogueCorpus.readFromFile(new File(corpusName + ".corpus")));
+		// at.setCorpus(DialogueCorpus.readFromFile(new File(corpusName + ".corpus.gz")));
 		// // use something like this to (re-)parse a corpus
 		// CorpusParser.parse(corpus);
 
@@ -1076,6 +1148,18 @@ public class AlignmentTester<X extends DialogueUnit> {
 		}
 		at.setCorpus(corpus);
 
+		TreeKernel.clearAllowedProductions();
+		TreeKernel.clearBannedProductions();
+		if (simType.equals("syntop")) {
+			for (String bnf : corpus.topTenSynProductions()) {
+				TreeKernel.addAllowedProduction(bnf);
+			}
+		} else if (simType.equals("synbot")) {
+			for (String bnf : corpus.topTenSynProductions()) {
+				TreeKernel.addBannedProduction(bnf);
+			}
+		}
+
 		at.normalisation = NORM_NONE;
 		// at.smoother = SmoothingFactory.getSmoother("gaussian(5)");
 		int num = 300;
@@ -1088,11 +1172,11 @@ public class AlignmentTester<X extends DialogueUnit> {
 	}
 
 	private static DialogueCorpus getCorpus(String baseDir, String corpusRoot, String randSuffix, String randType) {
-		String corpusName = corpusRoot + randSuffix + ".corpus";
+		String corpusName = corpusRoot + randSuffix + ".corpus.gz";
 		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File(corpusName));
 		if (corpus == null) {
 			if (!randType.isEmpty()) {
-				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus"));
+				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus.gz"));
 			}
 			if (corpus == null) {
 				if (corpusRoot.startsWith("dcpse")) {
@@ -1121,8 +1205,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 					} else {
 						CreateTreeFromSWBD.setOption(CreateTreeFromSWBD.INCLUDE_NO_INTJ, false);
 					}
-					corpus = (baseDir == null ? new SwitchboardCorpus(2, 2, 10, 0) : new SwitchboardCorpus(baseDir, 2,
-							2, 10, 0));
+					corpus = (baseDir == null ? new SwitchboardCorpus(2, 2, 10, 0)
+							: new SwitchboardCorpus(baseDir, 2, 2, 10, 0));
 				} else if (corpusRoot.startsWith("bnc")) {
 					if (corpusRoot.endsWith("nointj")) {
 						throw new RuntimeException("not implemented yet");
@@ -1139,9 +1223,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 				// for "nointj" versions, keep the same randomisation assignment as the non-"nointj" if possible
 				// this isn't possible with trimmed corpora, as parts of the original assignment may have been trimmed
 				if (corpusRoot.contains("nointj") && !corpusRoot.contains("trim")) {
-					RandomCorpus.setCorpusToCopy(DialogueCorpus.readFromFile(new File(corpusRoot.replaceAll("_nointj",
-							"")
-							+ randSuffix + ".corpus")));
+					RandomCorpus.setCorpusToCopy(DialogueCorpus
+							.readFromFile(new File(corpusRoot.replaceAll("_nointj", "") + randSuffix + ".corpus.gz")));
 					corpus = new RandomCorpus(corpus, RandomCorpus.RAND_COPY_CORPUS, RandomCorpus.PAD_CUT,
 							RandomCorpus.LENGTH_IN_TURNS, true, true);
 				} else {
@@ -1187,27 +1270,28 @@ public class AlignmentTester<X extends DialogueUnit> {
 	public static void main(String[] args) {
 
 		String[] base = { // "/import/imc-corpora/corpora/dcpse",
-		// "C:/Documents and Settings/mpurver/My Documents/corpora",
+				"/Users/mpurver/SkyDrive/QMUL/imc-corpora/data/align",
 				// "/import/imc-corpora/kcl/ldc/treebank_3",
-				// "C:/Documents and Settings/mpurver/My Documents/corpora/treebank_3",
-				"/import/imc-corpora/corpora/BNC-XML",
-				// "C:/Documents and Settings/mpurver/My Documents/corpora/bnc",
-				"/import/imc-corpora/corpora/BNC-XML"
-		// "C:/Documents and Settings/mpurver/My Documents/corpora/bnc"
+				"/Users/mpurver/SkyDrive/QMUL/imc-corpora/data/align",
+				// "/import/imc-corpora/corpora/bnc/bnc-xml",
+				"/Users/mpurver/SkyDrive/QMUL/imc-corpora/data/align",
+				// "/import/imc-corpora/corpora/bnc/bnc-xml"
+				// "C:/Documents and Settings/mpurver/My Documents/corpora/bnc"
 		};
 		// String[] corpus = { "dcpse", "swbd", "bnc_trim", "dcpse_nointj", "swbd_nointj", "bnc_nointj_trim" };
-		String[] corpus = { /* "dcpse", "swbd", */"bnc_trim_stanford", "bnc_trim_ccg", /*
-																						 * "dcpse_nointj",
-																						 * "swbd_nointj",
-																						 * "bnc_nointj_trim_stanford",
-																						 * "bnc_nointj_trim_ccg"
-																						 */};
+		// String[] corpus = { /* "dcpse", */"swbd", /*
+		// * "bnc_trim_stanford", "bnc_trim_ccg", /* "dcpse_nointj",
+		// * "swbd_nointj", "bnc_nointj_trim_stanford", "bnc_nointj_trim_ccg"
+		// */};
 		// String[] corpus = { "dcpsefp" };
-		// String[] corpus = { "swbd" };
-		String[] rand = { "", "random1", /* "random2", "random3", "random4", "random5", "random_same", */"random_s2me" };
-		String[] sim = { "lex", "tok", "syn" /* , "gries" */};
-		String[] unit = { "turn", "tuco", "sent" };
-		String[] win = { "oth", "sam" /* , "any" */};
+		String[] corpus = { "dcpse", "swbd", "bnc_trim_ccg" };
+		String[] rand = {
+				/* "", */"random1" /*
+									 * , "random2", "random3", "random4", "random5", "random_same", "random_s2me"
+									 */ };
+		String[] sim = { "lex", /* "tok", */"syn", "syntop", "synbot" /* , "gries" */ };
+		String[] unit = { "turn", /* "tuco", "sent" */ };
+		String[] win = { "oth", "sam" /* , "any" */ };
 		int monteCarlo = 0; // number of repetitions for MC
 
 		for (int i = 0; i < args.length; i++) {
