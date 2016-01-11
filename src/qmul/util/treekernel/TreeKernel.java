@@ -88,8 +88,11 @@ public class TreeKernel {
 
 	}
 
+	/** sub-tree = any node with all descendants down to leaves - see Moschitti 2006 **/
 	public static final int SUB_TREES = 0;
+	/** subset-tree = any node with any descendants down arbitrarily far - see Moschitti 2006 **/
 	public static final int SUBSET_TREES = 1;
+	/** syn-tree = any node with only immediate descendants **/
 	public static final int SYN_TREES = 2;
 
 	private static Tree t1;
@@ -127,6 +130,11 @@ public class TreeKernel {
 	 */
 	private static HashSet<String> allowedProductions = new HashSet<String>();
 
+	/**
+	 * Whether to restrict calculation from certain {@link Production}s
+	 */
+	private static HashSet<String> bannedProductions = new HashSet<String>();
+
 	/*
 	 * public static float computeMaxTreeSimilarity(LinkedList<Tree> trees1, LinkedList<Tree> trees2) { Iterator<Tree>
 	 * treeIter2=trees2.iterator(); float curMax=0; while(treeIter.hasNext()) { Tree curTree=treeIter.next(); float
@@ -138,7 +146,7 @@ public class TreeKernel {
 	// treekernel.resetandcompute(tree,tree,false) (subtrees)
 	// THIS IS THE MAIN METHOD FOR COMPUTING COMPARISON
 	public static double resetAndCompute(Tree t1, Tree t2, int treeType) {
-System.out.println("Calculating syn sim ");
+		// System.out.println("Calculating syn sim ");
 		TreeKernel.treeType = treeType;
 		TreeKernel.sigma = (treeType == SUB_TREES ? 0 : 1);
 
@@ -180,7 +188,7 @@ System.out.println("Calculating syn sim ");
 					throw new RuntimeException("zero norm denominator with non-zero numerator: " + commonFrag);
 				}
 			}
-			System.out.println(" done.");
+			// System.out.println(" done.");
 			return ((double) commonFrag / denom);
 		} else {
 			long subtrees;
@@ -196,7 +204,7 @@ System.out.println("Calculating syn sim ");
 			// +" \n And subtrees in second tree: " +subtrees);
 			if (commonFrag < 0 || subtrees < 0)
 				throw new RuntimeException("Common Frag:" + commonFrag + "  subtrees:" + subtrees);
-			System.out.println("there were " + subtrees + " in total");
+			// System.out.println("there were " + subtrees + " in total");
 			if (subtrees == 0.0) {
 				if (commonFrag == 0) {
 					return 0.0;
@@ -222,6 +230,8 @@ System.out.println("Calculating syn sim ");
 			Production p = new Production(cur1, true);
 			if (!allowedProductions.isEmpty() && !allowedProductions.contains(p.getBnf()))
 				continue;
+			if (!bannedProductions.isEmpty() && bannedProductions.contains(p.getBnf()))
+				continue;
 			l1.add(p);
 			MapUtil.increment(l1counts, p.getBnf());
 		}
@@ -230,6 +240,8 @@ System.out.println("Calculating syn sim ");
 				continue;
 			Production p = new Production(cur2, true);
 			if (!allowedProductions.isEmpty() && !allowedProductions.contains(p.getBnf()))
+				continue;
+			if (!bannedProductions.isEmpty() && bannedProductions.contains(p.getBnf()))
 				continue;
 			l2.add(p);
 			MapUtil.increment(l2counts, p.getBnf());
@@ -475,6 +487,7 @@ System.out.println("Calculating syn sim ");
 	 *            add this BNF to the list of allowed {@link Production}s
 	 */
 	public static void addAllowedProduction(String bnf) {
+		System.out.println("Added allowed production " + bnf);
 		TreeKernel.allowedProductions.add(bnf);
 	}
 
@@ -490,7 +503,33 @@ System.out.println("Calculating syn sim ");
 	 * clear the list of allowed {@link Production}s
 	 */
 	public static void clearAllowedProductions() {
+		System.out.println("Cleared allowed productions");
 		TreeKernel.allowedProductions.clear();
+	}
+
+	/**
+	 * @param bnf
+	 *            add this BNF to the list of banned {@link Production}s
+	 */
+	public static void addBannedProduction(String bnf) {
+		System.out.println("Added banned production " + bnf);
+		TreeKernel.bannedProductions.add(bnf);
+	}
+
+	/**
+	 * @param bnf
+	 *            remove this BNF from the list of banned {@link Production}s
+	 */
+	public static void removeBannedProduction(String bnf) {
+		TreeKernel.bannedProductions.remove(bnf);
+	}
+
+	/**
+	 * clear the list of banned {@link Production}s
+	 */
+	public static void clearBannedProductions() {
+		System.out.println("Cleared banned productions");
+		TreeKernel.bannedProductions.clear();
 	}
 
 	/**
@@ -540,6 +579,14 @@ System.out.println("Calculating syn sim ");
 		System.out.println(TreeKernel.resetAndCompute(t2, t1, 1));
 		System.out.println(TreeKernel.resetAndCompute(t2, t1, 2));
 
+		addBannedProduction("NP:PRP");
+		addBannedProduction("NP:NNP");
+		System.out.println(TreeKernel.resetAndCompute(t1, t2, 0));
+		System.out.println(TreeKernel.resetAndCompute(t1, t2, 1));
+		System.out.println(TreeKernel.resetAndCompute(t1, t2, 2));
+		System.out.println(TreeKernel.resetAndCompute(t2, t1, 0));
+		System.out.println(TreeKernel.resetAndCompute(t2, t1, 1));
+		System.out.println(TreeKernel.resetAndCompute(t2, t1, 2));
 	}
 
 }

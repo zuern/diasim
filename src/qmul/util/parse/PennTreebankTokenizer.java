@@ -11,7 +11,8 @@ import java.util.List;
 
 import edu.stanford.nlp.ling.Word;
 import edu.stanford.nlp.process.DocumentPreprocessor;
-import edu.stanford.nlp.trees.PennTreebankLanguagePack;
+import edu.stanford.nlp.process.PTBTokenizer;
+import edu.stanford.nlp.process.WordTokenFactory;
 
 /**
  * A wrapper for the Stanford {@link PennTreebankTokenizer} which fixes the latter's behaviour with certain
@@ -22,7 +23,9 @@ import edu.stanford.nlp.trees.PennTreebankLanguagePack;
  */
 public class PennTreebankTokenizer {
 
-	private DocumentPreprocessor dp = new DocumentPreprocessor(new PennTreebankLanguagePack().getTokenizerFactory());
+	// private DocumentPreprocessor dp = new DocumentPreprocessor(new PennTreebankLanguagePack().getTokenizerFactory());
+	private DocumentPreprocessor dp = new DocumentPreprocessor(PTBTokenizer.PTBTokenizerFactory.newPTBTokenizerFactory(
+			new WordTokenFactory(), "americanize=false"));
 
 	private boolean splitPennAbbreviations = false;
 
@@ -41,9 +44,16 @@ public class PennTreebankTokenizer {
 	 */
 	public List<Word> getWordsFromString(String s) {
 		if (splitPennAbbreviations) {
-			s = s.replaceAll("(\\w+)([.,?!;:])\\s*$", "$1 $2");
+			s = s.replaceAll("(\\w+)([.,?!;:])(\\s+|$)", "$1 $2");
 		}
-		return dp.getWordsFromString(s);
+		List<Word> words = dp.getWordsFromString(s);
+		for (Word w : words) {
+			// Penn tokeniser transforms "a/b" into "a\/b"
+			if (w.word().contains("/")) {
+				w.setWord(w.word().replaceAll("\\\\/", "/"));
+			}
+		}
+		return words;
 	}
 
 	/**
