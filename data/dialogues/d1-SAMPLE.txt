@@ -1,0 +1,4 @@
+00:00 Speaker1: Hello, this is some sample text to work with.
+00:01 Speaker2: How fascinating. I really love sample text!
+00:12 S1: Yes yes, it is very cool.
+00:13 S2: Agreed!

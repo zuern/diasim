@@ -10,6 +10,8 @@
  ******************************************************************************/
 package qmul.corpus;
 
+import csli.util.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,8 +20,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import csli.util.FileUtils;
-
 /**
  * Simple corpora created from transcript files output from NOMOS
  * 
@@ -27,6 +27,7 @@ import csli.util.FileUtils;
  */
 public abstract class TranscriptCorpus extends DialogueCorpus {
 
+	// Pattern:                                                     "DATag speakerID_00_01 [Transcript]"
 	private static final Pattern LINE_PAT = Pattern.compile("^(\\S*)\\s+(\\w+)_\\d+_\\d+\\s+\\[(.*)\\]\\s*$");
 
 	public TranscriptCorpus(String id, File file, boolean dynamic) {
