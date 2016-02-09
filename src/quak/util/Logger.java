@@ -27,7 +27,8 @@ public abstract class Logger {
                 logFile.close();
                 Logger.logToFile = false;
             } else {
-                logFile = new PrintWriter(new FileWriter(filePath, false));
+                // This will append to the file if it already exists.
+                logFile = new PrintWriter(new FileWriter(filePath, true));
                 Logger.logToFile = true;
             }
         } catch (IOException ex) {
