@@ -1,7 +1,0 @@
-00:00 Speaker1: Hi there, nice to meet you!
-00:01 Speaker2: Hello. How are you?
-00:01 S1: I'm good thanks. Yourself?
-00:02 S2: Also good. So, should we get down to business?
-00:03 S1: Yes, I think that's a good idea. Were you able to procure the samples for me?
-00:03 S2: Yeah. Most of them at least. There's a few I didn't get around to yet but I'll have those done by Friday.
-00:04 S1: Excellent.
