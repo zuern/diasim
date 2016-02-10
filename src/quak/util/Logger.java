@@ -6,8 +6,6 @@ import java.io.PrintWriter;
 import java.util.Date;
 
 /**
- * Created by Kevin on 2/2/2016.
- * <p/>
  * This helps with logging text to console or to a logfile.
  * The log file is set globally so calling log from any class will log to the same file.
  */

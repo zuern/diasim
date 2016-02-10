@@ -1,8 +1,6 @@
 package quak.util;
 
 /**
- * Created by Kevin on 1/21/2016.
- * <p/>
  * Provides some basic helper methods for printing info to console.
  */
 public abstract class Formatting {

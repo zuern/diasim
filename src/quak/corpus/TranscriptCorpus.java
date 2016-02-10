@@ -24,9 +24,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Simple corpora created from transcript files output from NOMOS
+ * Simple corpora created from transcript text files.
  *
  * @author mpurver
+ * @author Kevin
  */
 public class TranscriptCorpus extends DialogueCorpus {
 

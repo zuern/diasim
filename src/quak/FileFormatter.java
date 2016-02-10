@@ -7,10 +7,7 @@ import java.io.File;
 import java.util.concurrent.Callable;
 
 /**
- * Created by Kevin on 2/3/2016.
- *
- * This is a project specific class to format the transcripts provided by the Queen's SpeechLab to prepare them for
- * importing.
+ * Formats text based transcripts provided by the Queen's SpeechLab to prepare them for importing into a corpus.
  */
 public class FileFormatter {
 
@@ -29,15 +26,12 @@ public class FileFormatter {
         String dir     = "data\\dialogues\\";
 
         String[] findPatterns = new String[]{
-                "Speaker",
-                "[0-9]{2}:[0-9]{2} (S)[0-9]: ",
+                "S",
         };
         String[] replacePatterns = new String[]{
                 "S",
-                " S",
         };
         ReplaceStyle[] styles = new ReplaceStyle[]{
-                ReplaceStyle.ReplaceFIRST,
                 ReplaceStyle.ReplaceFIRST,
         };
 
