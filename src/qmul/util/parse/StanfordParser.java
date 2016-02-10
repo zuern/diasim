@@ -23,11 +23,12 @@ import edu.stanford.nlp.trees.Tree;
  * 
  * @author arash
  * @author mpurver modified from DiET {@link ParserWrap}
+ * @author Kevin modified from diasim
  */
 public class StanfordParser implements TreeParser {
 
-	private static final String DEFAULT_FILE = System.getProperty("user.dir") + File.separator + ".." + File.separator
-			+ "util" + File.separator + "lib" + File.separator + "stanford-parser-2010-08-20" + File.separator
+	private static final String DEFAULT_FILE = System.getProperty("user.dir") + File.separator + "lib" + File.separator
+            + "stanford-parser-2010-08-20" + File.separator
 			+ "englishPCFG.ser.gz";
 
 	private static final String[] DEFAULT_OPTIONS = { "-maxLength", "100", "-retainTmpSubcategories" };
