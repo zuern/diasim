@@ -4,4 +4,4 @@ out
 .idea/
 doc
 *~
-log.txt
+data/*

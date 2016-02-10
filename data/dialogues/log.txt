@@ -1,4 +1,0 @@
-Tue Feb 09 03:11:20 EST 2016: Formatted "d1-SAMPLE.txt", saving it to "C:\Users\Kevin\Desktop\sandbox\diasim-code\data\dialogues\d1-SAMPLE.txt".
-Tue Feb 09 03:11:20 EST 2016: Formatted "d2-SAMPLE.txt", saving it to "C:\Users\Kevin\Desktop\sandbox\diasim-code\data\dialogues\d2-SAMPLE.txt".
-Tue Feb 09 03:16:30 EST 2016: Formatted "d1-SAMPLE.txt", saving it to "C:\Users\Kevin\Desktop\sandbox\diasim-code\data\dialogues\d1-SAMPLE.txt".
-Tue Feb 09 03:16:30 EST 2016: Formatted "d2-SAMPLE.txt", saving it to "C:\Users\Kevin\Desktop\sandbox\diasim-code\data\dialogues\d2-SAMPLE.txt".

@@ -9,7 +9,7 @@
  * Matthew Purver, Queen Mary University of London - initial API and implementation
  * Kevin Zuern, Queen's University at Kingston - modification of implementation to suit needs of project
  ******************************************************************************/
-package quak;
+package quak.corpus;
 
 import csli.util.FileUtils;
 import qmul.corpus.*;
