@@ -1,7 +1,8 @@
 package quak;
 
-import qmul.corpus.CorpusParser;
-import quak.corpus.TranscriptCorpus;
+import qmul.align.AlignmentTester;
+import qmul.corpus.*;
+import quak.corpus.TextCorpus;
 import quak.util.Logger;
 
 import java.io.File;
@@ -17,11 +18,11 @@ public abstract class TranscriptsWorker {
      *          The directory where all the transcripts are saved
      */
     public static void CreateCorpus(File TranscriptsDirectory) {
-        TranscriptCorpus corpus = new TranscriptCorpus("QuakCorpus",TranscriptsDirectory,false);
+        TextCorpus corpus = new TextCorpus("QuakCorpus",TranscriptsDirectory,false);
 
         corpus.setupCorpus();
 
-        corpus.writeToFile(new File("corpus"));
+        corpus.writeToFile(new File("data\\sampledata.corpus"));
     }
 
     /**
@@ -30,17 +31,64 @@ public abstract class TranscriptsWorker {
      * @param corpusFile
      */
     public static void ParseCorpus(File corpusFile) {
-        TranscriptCorpus corpus = (TranscriptCorpus)TranscriptCorpus.readFromFile(corpusFile);
+        TextCorpus corpus = (TextCorpus) TextCorpus.readFromFile(corpusFile);
 
         CorpusParser parser = new CorpusParser();
-        parser.setParser(); // Run with default stanford settings
-        parser.parse(corpus); // Modifies corpus by adding syntactic information.
+        parser.setParser();                 // Run with default stanford settings
+        if (parser.parse(corpus) > 0)       // Only write to file if it actually parsed something
+            corpus.writeToFile(corpusFile); // Modifies corpus by adding syntactic information.
+        else
+        {
+            Logger.log("Parser didn't parse anything. Exiting now");
+            System.exit(1);
+        }
+    }
 
-        Logger.log("Parsed");
+    /**
+     * Test method to experiment with generating random baseline
+     * @param originalCorpus
+     *      Where the original corpus is located
+     * @param randomizedCorpus
+     *      Where to save the randomized corpus.
+     */
+    private static void GenerateRandomBaseline(File originalCorpus, File randomizedCorpus) {
+        // Create the random corpus
+        RandomCorpus rc = new RandomCorpus(
+                TextCorpus.readFromFile(originalCorpus),
+                RandomCorpus.RAND_ALL_TURNS,
+                RandomCorpus.PAD_RAND_TURNS,
+                RandomCorpus.LENGTH_IN_TURNS,
+                true,   // matchGenre
+                false); // don't care if speaker matched with self from another file (each file has unique speakers anyways)
+        System.out.println();System.out.println();System.out.println();
+        for (Dialogue d : rc.getDialogues()) {
+            System.out.println("GOT NEXT DIALOGUE: " + d.getId());
+            for (DialogueSentence s : d.getSents())
+                System.out.println(s.getTranscription());
+
+        rc.writeToFile(randomizedCorpus);
+        }
+    }
+
+    private static void RunAlignmentTester(File file,boolean generateXLSFile, boolean plotGraphs) {
+        AlignmentTester aTester = new AlignmentTester();
+        aTester.runTest(
+                "",                     // baseDir
+                "data\\sampledata",     // Corpustype (no idea)
+                "random4",              // randType = RAND_ALL_TURNS
+                "syn",                  // syntactic similarity measure
+                "turn",                 // unitType (no other options)
+                "oth",                  // winType (no idea what this is)
+                0,                      // num repetitions for Monte Carlo
+                generateXLSFile,        // XLS output
+                plotGraphs              // plot graphs
+        );
     }
 
     public static void main(String[] args) {
         //CreateCorpus(new File("data\\dialogues\\"));
-        ParseCorpus(new File("data\\corpus"));
+        //ParseCorpus(new File("data\\sampledata.corpus"));
+        //GenerateRandomBaseline(new File("data\\sampledata.corpus"),new File("data\\sampledata-random.corpus"));
+        RunAlignmentTester(new File("data\\sampledata.corpus"),false,false);
     }
 }

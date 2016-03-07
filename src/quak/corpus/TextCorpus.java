@@ -29,14 +29,14 @@ import java.util.regex.Pattern;
  * @author mpurver
  * @author Kevin
  */
-public class TranscriptCorpus extends DialogueCorpus {
+public class TextCorpus extends DialogueCorpus {
 
     // Pattern:                                                     "00:00 SpeakerID: Transcript"
     private static final Pattern LINE_PAT = Pattern.compile("(?:[0-9]{2}:[0-9]{2}) ([\\S][^:]+): ([\\S \t]+)");
 
     private final String GENRE = "QU_Genre";
 
-    public TranscriptCorpus(String id, File file, boolean dynamic) {
+    public TextCorpus(String id, File file, boolean dynamic) {
         super(id, file, dynamic);
     }
 
@@ -46,9 +46,9 @@ public class TranscriptCorpus extends DialogueCorpus {
     protected List<String> matchLine(String line, String dialogueId) {
         Matcher m = LINE_PAT.matcher(line);
         if (m.matches()) {
-            // Use to create hascode for daTags. Just a placeholder - we don't need Dialogue Act tags.
+            // Use to create hashcode for daTags. Just a placeholder - we don't need Dialogue Act tags.
             Date d = new Date();
-            String daTags = Integer.toString(d.hashCode());
+            String daTags = null;
 
             String spkId = m.group(1);
             String trans = m.group(2).trim();
@@ -85,7 +85,7 @@ public class TranscriptCorpus extends DialogueCorpus {
             }
             List<String> matches = matchLine(line, id);
             if (matches != null) {
-                String daTags = matches.get(0);
+                String daTags = null;
                 String spkId = matches.get(1);
                 String trans = matches.get(2);
                 DialogueSpeaker spk = getSpeakerMap().get(spkId);

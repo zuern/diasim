@@ -1172,11 +1172,11 @@ public class AlignmentTester<X extends DialogueUnit> {
 	}
 
 	private static DialogueCorpus getCorpus(String baseDir, String corpusRoot, String randSuffix, String randType) {
-		String corpusName = corpusRoot + randSuffix + ".corpus.gz";
+		String corpusName = corpusRoot + randSuffix + ".corpus";
 		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File(corpusName));
 		if (corpus == null) {
 			if (!randType.isEmpty()) {
-				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus.gz"));
+				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus"));
 			}
 			if (corpus == null) {
 				if (corpusRoot.startsWith("dcpse")) {
