@@ -1,10 +1,15 @@
 package quak;
 
 import qmul.align.AlignmentTester;
+import qmul.align.SentenceSyntacticSimilarityMeasure;
 import qmul.corpus.*;
+import qmul.util.similarity.SyntacticSimilarityMeasure;
+import qmul.window.SentenceWindower;
+import qmul.window.TurnWindower;
 import quak.corpus.TextCorpus;
 import quak.util.Logger;
 
+import javax.xml.soap.Text;
 import java.io.File;
 
 /**
@@ -78,7 +83,7 @@ public abstract class TranscriptsWorker {
                 "random4",              // randType = RAND_ALL_TURNS
                 "syn",                  // syntactic similarity measure
                 "turn",                 // unitType (no other options)
-                "oth",                  // winType (no idea what this is)
+                "any",                  // winType (no idea what this is)
                 0,                      // num repetitions for Monte Carlo
                 generateXLSFile,        // XLS output
                 plotGraphs              // plot graphs
@@ -86,9 +91,9 @@ public abstract class TranscriptsWorker {
     }
 
     public static void main(String[] args) {
-        //CreateCorpus(new File("data\\dialogues\\"));
-        //ParseCorpus(new File("data\\sampledata.corpus"));
+        CreateCorpus(new File("data\\dialogues\\"));
+        ParseCorpus(new File("data\\sampledata.corpus"));
         //GenerateRandomBaseline(new File("data\\sampledata.corpus"),new File("data\\sampledata-random.corpus"));
-        RunAlignmentTester(new File("data\\sampledata.corpus"),false,false);
+        RunAlignmentTester(new File("data\\sampledata.corpus"),false,true);
     }
 }

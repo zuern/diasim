@@ -268,12 +268,14 @@ public class AlignmentTester<X extends DialogueUnit> {
 				}
 				// print number sents/words/tokens
 				iCol += (win.getLeftWindowSize() - left.size() + 1);
-				cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
-				cell.setCellValue(r instanceof DialogueTurn ? ((DialogueTurn) r).getSents().size() : 1);
-				cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
-				cell.setCellValue(r.numWords());
-				cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
-				cell.setCellValue(r.numTokens());
+				if (wb != null) { // if we are writing to a workbook
+					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell.setCellValue(r instanceof DialogueTurn ? ((DialogueTurn) r).getSents().size() : 1);
+					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell.setCellValue(r.numWords());
+					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell.setCellValue(r.numTokens());
+				}
 				iCol += 1;
 				if (!Double.isNaN(offset)) {
 					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
