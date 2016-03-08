@@ -22,12 +22,12 @@ public abstract class TranscriptsWorker {
      * @param TranscriptsDirectory
      *          The directory where all the transcripts are saved
      */
-    public static void CreateCorpus(File TranscriptsDirectory) {
+    public static void CreateCorpus(File TranscriptsDirectory, File CorpusFile) {
         TextCorpus corpus = new TextCorpus("QuakCorpus",TranscriptsDirectory,false);
 
         corpus.setupCorpus();
 
-        corpus.writeToFile(new File("data\\sampledata.corpus"));
+        corpus.writeToFile(CorpusFile);
     }
 
     /**
@@ -75,11 +75,11 @@ public abstract class TranscriptsWorker {
         }
     }
 
-    private static void RunAlignmentTester(File file,boolean generateXLSFile, boolean plotGraphs) {
+    private static void RunAlignmentTester(String corpusFile,boolean generateXLSFile, boolean plotGraphs) {
         AlignmentTester aTester = new AlignmentTester();
         aTester.runTest(
                 "",                     // baseDir
-                "data\\sampledata",     // Corpustype (no idea)
+                corpusFile,             // Corpustype (no idea)
                 "random4",              // randType = RAND_ALL_TURNS
                 "syn",                  // syntactic similarity measure
                 "turn",                 // unitType (no other options)
@@ -91,9 +91,16 @@ public abstract class TranscriptsWorker {
     }
 
     public static void main(String[] args) {
-        CreateCorpus(new File("data\\dialogues\\"));
-        ParseCorpus(new File("data\\sampledata.corpus"));
-        //GenerateRandomBaseline(new File("data\\sampledata.corpus"),new File("data\\sampledata-random.corpus"));
-        RunAlignmentTester(new File("data\\sampledata.corpus"),false,true);
+        File transcriptsDir     = new File("E:\\K2 Workspace\\Latif_DiaSim\\formattedTranscripts");
+        File corpusFile         = new File("E:\\K2 Workspace\\Latif_DiaSim\\corpora\\quakCorpus.corpus");
+
+        if (!transcriptsDir.exists()) {
+            System.err.println("transcriptsDir does not exist. Check the filename!");
+            System.exit(1);
+        }
+
+        CreateCorpus(transcriptsDir,corpusFile);
+        ParseCorpus(corpusFile);
+        RunAlignmentTester(corpusFile.getParentFile().getName()+"\\"+corpusFile.getName(),false,true);
     }
 }
