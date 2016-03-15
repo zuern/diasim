@@ -75,11 +75,11 @@ public abstract class TranscriptsWorker {
         }
     }
 
-    private static void RunAlignmentTester(String corpusFile,boolean generateXLSFile, boolean plotGraphs) {
+    private static void RunAlignmentTester(String corpusRoot,boolean generateXLSFile, boolean plotGraphs) {
         AlignmentTester aTester = new AlignmentTester();
         aTester.runTest(
                 "",                     // baseDir
-                corpusFile,             // Corpustype (no idea)
+                corpusRoot,             // CorpusRoot (no idea)
                 "random4",              // randType = RAND_ALL_TURNS
                 "syn",                  // syntactic similarity measure
                 "turn",                 // unitType (no other options)
@@ -93,14 +93,16 @@ public abstract class TranscriptsWorker {
     public static void main(String[] args) {
         File transcriptsDir     = new File("E:\\K2 Workspace\\Latif_DiaSim\\formattedTranscripts");
         File corpusFile         = new File("E:\\K2 Workspace\\Latif_DiaSim\\corpora\\quakCorpus.corpus");
+        transcriptsDir          = new File("data\\dialogues\\");
+        corpusFile              = new File("data\\sampledata.corpus");
 
         if (!transcriptsDir.exists()) {
             System.err.println("transcriptsDir does not exist. Check the filename!");
             System.exit(1);
         }
 
-        CreateCorpus(transcriptsDir,corpusFile);
-        ParseCorpus(corpusFile);
-        RunAlignmentTester(corpusFile.getParentFile().getName()+"\\"+corpusFile.getName(),false,true);
+        //CreateCorpus(transcriptsDir,corpusFile);
+        //ParseCorpus(corpusFile);
+        RunAlignmentTester(corpusFile.toString().split("\\.")[0],false,true);
     }
 }
