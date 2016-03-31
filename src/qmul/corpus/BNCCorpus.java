@@ -54,9 +54,9 @@ public class BNCCorpus extends DialogueCorpus {
 	private static final String ID = "BNC";
 
 	private static final String BASE_DIR = "/import/imc-corpora/corpora/bnc/bnc-xml";
-	private static final String DATA_DIR = "Texts/F/FM";
-	// private static final String TIMING_DIR = "/import/imc-corpora/corpora/bnc/bnc-audio";
-	private static final String TIMING_DIR = "/Users/mpurver/Documents/imc-corpora/corpora/bnc/bnc-audio";
+	private static final String DATA_DIR = "Texts";
+	private static final String TIMING_DIR = "/import/imc-corpora/corpora/bnc/bnc-audio";
+	// private static final String TIMING_DIR = "/Users/mpurver/Documents/imc-corpora/corpora/bnc/bnc-audio";
 
 	private static final PennTreebankTokenizer tok = new PennTreebankTokenizer(true);
 
@@ -676,9 +676,6 @@ public class BNCCorpus extends DialogueCorpus {
 						System.out.println("matched sent " + s.getId() + " " + s.getStartTime() + "-" + s.getEndTime());
 						System.out.println(" so turn " + turn.getId() + " " + turn.getStartTime() + "-"
 								+ turn.getEndTime());
-					}
-					if (dialogue.getId().startsWith("FM4") && (s.getNum()>760)) {
-						System.exit(0);
 					}
 				} else {
 					if (list.item(i).getNodeName().equals("#text") && list.item(i).getNodeValue().trim().isEmpty()) {

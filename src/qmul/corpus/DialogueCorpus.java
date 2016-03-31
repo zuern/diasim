@@ -184,6 +184,9 @@ public abstract class DialogueCorpus implements Serializable {
 			return c;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+			if (file.getName().endsWith(".gz")) {
+				readFromFile(new File(file.getPath().substring(0, file.getName().length() - 3)));
+			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -246,16 +249,16 @@ public abstract class DialogueCorpus implements Serializable {
 	 * @return true if we should carry on and get another dialogue, false otherwise
 	 */
 	protected boolean checkDialogue(Dialogue dialogue) {
-		System.out.println("Got dialogue " + dialogue.getId() + " with " + dialogue.numTurns() + " turns, "
-				+ dialogue.numSents() + " sentences, " + dialogue.numSpeakers() + " speakers, " + dialogue.getGenre()
-				+ " genre");
+		System.out.println(
+				"Got dialogue " + dialogue.getId() + " with " + dialogue.numTurns() + " turns, " + dialogue.numSents()
+						+ " sentences, " + dialogue.numSpeakers() + " speakers, " + dialogue.getGenre() + " genre");
 		if (!Float.isNaN(dialogue.getStartTime())) {
 			System.out.println("Start time " + dialogue.getStartTime() + " end time " + dialogue.getEndTime());
 		}
 		if (badNumSpeakers(dialogue)) {
 			removeDialogue(dialogue);
-			System.out.println("Removing dialogue " + dialogue.getId() + " - bad number of speakers "
-					+ dialogue.numSpeakers());
+			System.out.println(
+					"Removing dialogue " + dialogue.getId() + " - bad number of speakers " + dialogue.numSpeakers());
 		} else if (getGenreCounts().get(dialogue.getGenre()) < getMinGenreCount()) {
 			removeDialogue(dialogue);
 			System.out.println("Removing dialogue " + dialogue.getId() + " - bad genre " + dialogue.getGenre()
@@ -277,7 +280,8 @@ public abstract class DialogueCorpus implements Serializable {
 	 *         about (e.g. the "unknown" speakers in the BNC)
 	 */
 	protected boolean badNumSpeakers(Dialogue dialogue) {
-		return ((dialogue.numSpeakers() < getMinSpeakers()) || ((dialogue.numSpeakers() > getMaxSpeakers()) && (getMaxSpeakers() > 0)));
+		return ((dialogue.numSpeakers() < getMinSpeakers())
+				|| ((dialogue.numSpeakers() > getMaxSpeakers()) && (getMaxSpeakers() > 0)));
 	}
 
 	/**
@@ -286,8 +290,8 @@ public abstract class DialogueCorpus implements Serializable {
 	 * @return true if the check succeeds, false otherwise
 	 */
 	protected boolean sanityCheck() {
-		System.out.println("Built corpus with " + numDialogues() + " dialogues, " + numTurns() + " turns, "
-				+ numSents() + " sents");
+		System.out.println("Built corpus with " + numDialogues() + " dialogues, " + numTurns() + " turns, " + numSents()
+				+ " sents");
 		System.out.println("Total number of word tokens: " + numWords());
 		System.out.println("Sanity check: " + d + " dialogues, " + t + " turns, " + s + " sents");
 		return ((d == numDialogues()) && (t == numTurns()) || (s == numSents()));
