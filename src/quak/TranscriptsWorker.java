@@ -11,6 +11,7 @@ import quak.util.Logger;
 
 import javax.xml.soap.Text;
 import java.io.File;
+import java.io.StreamCorruptedException;
 
 /**
  * This class exposes methods to test the various faculties of the diasim library
@@ -75,10 +76,10 @@ public abstract class TranscriptsWorker {
         }
     }
 
-    private static void RunAlignmentTester(String corpusRoot,boolean generateXLSFile, boolean plotGraphs) {
+    private static void RunAlignmentTester(String baseDir, String corpusRoot,boolean generateXLSFile, boolean plotGraphs) {
         AlignmentTester<DialogueTurn> aTester = new AlignmentTester<DialogueTurn>();
         aTester.runTest(
-                "",                     // baseDir
+                baseDir,                // baseDir
                 corpusRoot,             // CorpusRoot (no idea)
                 "random4",              // randType = RAND_ALL_TURNS
                 "syn",                  // syntactic similarity measure
@@ -92,9 +93,11 @@ public abstract class TranscriptsWorker {
 
     public static void main(String[] args) {
         File transcriptsDir     = new File("E:\\K2 Workspace\\Latif_DiaSim\\formattedTranscripts");
+        String corpusDir        = "";
         File corpusFile         = new File("E:\\K2 Workspace\\Latif_DiaSim\\corpora\\quakCorpus.corpus");
-        transcriptsDir          = new File("data\\dialogues\\");
-        corpusFile              = new File("data\\sampledata.corpus");
+        transcriptsDir          = new File("dialogues\\");
+        //corpusDir               = "data\\";
+        corpusFile              = new File("sampledata.corpus");
 
         if (!transcriptsDir.exists()) {
             System.err.println("transcriptsDir does not exist. Check the filename!");
@@ -103,6 +106,6 @@ public abstract class TranscriptsWorker {
 
         //TextCorpus created = CreateCorpus(transcriptsDir,corpusFile);
         //ParseCorpus(corpusFile);
-        RunAlignmentTester(corpusFile.toString().split("\\.")[0],true,true);
+        RunAlignmentTester(corpusDir, corpusFile.toString().split("\\.")[0],true,true);
     }
 }

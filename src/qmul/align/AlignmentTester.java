@@ -1175,7 +1175,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 
 	private static DialogueCorpus getCorpus(String baseDir, String corpusRoot, String randSuffix, String randType) {
 		String corpusName = corpusRoot + randSuffix + ".corpus";
-		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File(corpusName));
+		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File(baseDir + corpusName));
 		if (corpus == null) {
 			if (!randType.isEmpty()) {
 				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus"));
