@@ -1,0 +1,15 @@
+PLEASE IGNORE ALL LINES BEFORE THE SEPARATOR.
+
+Please note that in this transcript we prefixed the speaker's ID with the filename to make each speaker in each file unique.
+If you have a speaker who shows up in multiple files you will have to make sure his/her speaker ID is identical in those files.
+The following line describes the format the transcripts must be in. After that, the "------" denotes the beginning of the transcript.
+You should only include text in the format below the "-----" line.
+
+Format for a turn in the transcript:
+
+[Timestamp] [Speaker Identification]: [Transcription]
+----------------------------------------------BEGIN TRANSCRIPT FILE-----------------------------------------------------
+00:00 d1_sample_S1: Hello, this is some sample text to work with.
+00:01 d1_sample_S2: How fascinating. I really love sample text!
+00:12 d1_sample_S1: Yes yes, it is very cool.
+00:13 d1_sample_S2: Agreed!
