@@ -690,7 +690,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 				// System.out.println("match " + pre + " " + suf);
 				row = sheet.createRow(iRow++);
 				iCol = 0;
-				String dId = spk.replaceFirst("(.*):.*", "$1");
+				String dId = spk.replaceFirst("(.*)_.*", "$1");
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(spk));
 				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
 						.setCellValue(new HSSFRichTextString(corpus.getGenreMap().get(spk.split(":")[0])));

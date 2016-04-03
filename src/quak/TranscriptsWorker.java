@@ -22,12 +22,12 @@ public abstract class TranscriptsWorker {
      * @param TranscriptsDirectory
      *          The directory where all the transcripts are saved
      */
-    public static void CreateCorpus(File TranscriptsDirectory, File CorpusFile) {
+    public static TextCorpus CreateCorpus(File TranscriptsDirectory, File CorpusFile) {
         TextCorpus corpus = new TextCorpus("QuakCorpus",TranscriptsDirectory,false);
 
-        corpus.setupCorpus();
-
         corpus.writeToFile(CorpusFile);
+
+        return corpus;
     }
 
     /**
@@ -93,15 +93,15 @@ public abstract class TranscriptsWorker {
     public static void main(String[] args) {
         File transcriptsDir     = new File("E:\\K2 Workspace\\Latif_DiaSim\\formattedTranscripts");
         File corpusFile         = new File("E:\\K2 Workspace\\Latif_DiaSim\\corpora\\quakCorpus.corpus");
-        //transcriptsDir          = new File("data\\dialogues\\");
-        //corpusFile              = new File("data\\sampledata.corpus");
+        transcriptsDir          = new File("data\\dialogues\\");
+        corpusFile              = new File("data\\sampledata.corpus");
 
         if (!transcriptsDir.exists()) {
             System.err.println("transcriptsDir does not exist. Check the filename!");
             System.exit(1);
         }
 
-        //CreateCorpus(transcriptsDir,corpusFile);
+        //TextCorpus created = CreateCorpus(transcriptsDir,corpusFile);
         //ParseCorpus(corpusFile);
         RunAlignmentTester(corpusFile.toString().split("\\.")[0],true,true);
     }
