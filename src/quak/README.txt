@@ -21,7 +21,7 @@ run AlignmentTests.
     in your corpus using the Stanford Parser. The Stanford Parser will use default settings to do the parsing.
 
 4.
-    Once you are ready to run a test, use quak.TestConfiguration.create to create an object to hold the parameters
+    Once you are ready to run a test, use quak.TestingConfiguration.create to create an object to hold the parameters
     for the test you want to run. Pass this in to quak.TestingTools.runSingleTest to run your test, or alternately you
     can create an array of TestConfigurations and run multiple tests in a batch.
 

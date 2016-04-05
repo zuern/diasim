@@ -59,9 +59,9 @@ public abstract class TestingTools {
     /**
      * Run a test using the parameters stored in t.
      * @param t
-     *      The configuration to use for this test. You can create a TestConfiguration object easily using TestConfiguration.create.
+     *      The configuration to use for this test. You can create a TestingConfiguration object easily using TestingConfiguration.create.
      */
-    public static void RunSingleTest(TestConfiguration t) {
+    public static void RunSingleTest(TestingConfiguration t) {
         // Run the test with the supplied parameters
         runTest(
                 t.baseDir,t.corpusRoot,
@@ -71,12 +71,12 @@ public abstract class TestingTools {
     }
 
     /**
-     * Run a series of tests, one test for each TestConfiguration found in testParametersArray.
+     * Run a series of tests, one test for each TestingConfiguration found in testParametersArray.
      * @param testParametersArray
      *      The array of configurations for each test to be run with.
      */
-    public static void RunMultipleTests(TestConfiguration[] testParametersArray) {
-        for (TestConfiguration testParameters : testParametersArray)
+    public static void RunMultipleTests(TestingConfiguration[] testParametersArray) {
+        for (TestingConfiguration testParameters : testParametersArray)
             RunSingleTest(testParameters);
     }
 }

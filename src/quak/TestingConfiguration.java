@@ -1,18 +1,16 @@
 package quak;
 
-import qmul.corpus.RandomCorpus;
-
 /**
  * Describes a set of parameters needed to run a single test using qmul.align.AlignmentTester.
  * @author Kevin
  */
-public class TestConfiguration {
+public class TestingConfiguration {
     public String baseDir, corpusRoot, randType, simType, unitType, winType;
     public int monteCarlo;
     public boolean xlsOutput, plotGraphs;
 
-    public TestConfiguration( String baseDir, String corpusRoot, String randType, String simType, String unitType,
-                              String winType, int monteCarlo, boolean xlsOutput, boolean plotGraphs) {
+    public TestingConfiguration(String baseDir, String corpusRoot, String randType, String simType, String unitType,
+                                String winType, int monteCarlo, boolean xlsOutput, boolean plotGraphs) {
         this.baseDir    = baseDir;
         this.corpusRoot = corpusRoot;
         this.randType   = randType;
@@ -45,14 +43,14 @@ public class TestConfiguration {
      * @param plotGraphs
      *          True to display graphs after running the test.
      * @return
-     *          A TestConfiguration object to pass to quak.TestingTools.runSingleTest or quak.TestingTools.runMultipleTests
+     *          A TestingConfiguration object to pass to quak.TestingTools.runSingleTest or quak.TestingTools.runMultipleTests
      */
-    public static TestConfiguration create (
+    public static TestingConfiguration create (
             String baseDir, String corpusRoot, String randType, String simType, String unitType,
             String winType, int monteCarlo, boolean xlsOutput, boolean plotGraphs
     )
     {
-        return new TestConfiguration( baseDir, corpusRoot, randType, simType, unitType,
+        return new TestingConfiguration( baseDir, corpusRoot, randType, simType, unitType,
                 winType, monteCarlo, xlsOutput, plotGraphs);
     }
 

@@ -1,7 +1,5 @@
 package quak;
 
-import java.io.File;
-
 /**
  * This class exposes methods to test the various faculties of the diasim library
  */
@@ -15,61 +13,59 @@ public abstract class TranscriptsWorker {
         boolean outputExcel     = true;
         boolean outputGraphs    = false;
 
-        // Create the corpus and parse it.
-        //TestingTools.CreateCorpus(transcriptsDir,corpusFile + ".corpus");
-        //TestingTools.ParseCorpus(corpusFile);
+        // Create the corpus and parse it
+        //TestingTools.CreateCorpus(transcriptsDir, new File(corpusName + ".corpus"));
+        //TestingTools.ParseCorpus(new File(corpusName + ".corpus"));
 
-        // Set up the 4 tests we'd like to run.
-        TestConfiguration[] tests = new TestConfiguration[] {
+        TestingConfiguration[] TestConfigs = new TestingConfiguration[] {
                 // LEX and SYN using WIN_USE_OtherSpeakerAllOtherTurnWindower
-                TestConfiguration.create(
+                TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestConfiguration.RAND_Random4,
-                        TestConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
-                        TestConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
-                        TestConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
+                        TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
+                        TestingConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
                         monteCarlo,
                         outputExcel,
                         outputGraphs
                 ),
-                TestConfiguration.create(
+                TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestConfiguration.RAND_Random4,
-                        TestConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
-                        TestConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
-                        TestConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
+                        TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
+                        TestingConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
                         monteCarlo,
                         outputExcel,
                         outputGraphs
                 ),
                 // LEX and SYN using WIN_USE_OtherSpeakerTurnWindower
-                TestConfiguration.create(
+                TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestConfiguration.RAND_Random4,
-                        TestConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
-                        TestConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
-                        TestConfiguration.WIN_USE_OtherSpeakerTurnWindower,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
+                        TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
+                        TestingConfiguration.WIN_USE_OtherSpeakerTurnWindower,
                         monteCarlo,
                         outputExcel,
                         outputGraphs
                 ),
-                TestConfiguration.create(
+                TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestConfiguration.RAND_Random4,
-                        TestConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
-                        TestConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
-                        TestConfiguration.WIN_USE_OtherSpeakerTurnWindower,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
+                        TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
+                        TestingConfiguration.WIN_USE_OtherSpeakerTurnWindower,
                         monteCarlo,
                         outputExcel,
                         outputGraphs
                 )
         };
 
-        // Run our tests using the supplied parameters.
-        TestingTools.RunSingleTest(tests[0]);
+        TestingTools.RunMultipleTests(TestConfigs);
     }
 }
