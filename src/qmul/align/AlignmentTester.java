@@ -79,6 +79,8 @@ import qmul.window.TurnWindower;
  */
 public class AlignmentTester<X extends DialogueUnit> {
 
+	private static int numTestsRun = 0; // Appended to summary.xlsx to indicate test number. e.g: summary 1.xlsx
+
 	private DialogueCorpus corpus;
 	private SimilarityMeasure<X> sim;
 	private DialogueWindower<X> win;
@@ -545,7 +547,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 				e.printStackTrace();
 				System.exit(0);
 			}
-			File summaryXls = new File("summary.xlsx");
+			File summaryXls = new File(numTestsRun + " summary.xlsx");
 			File countsXls = new File("counts.xlsx");
 			Workbook summaryWb = null;
 			Workbook countsWb = null;
@@ -1009,8 +1011,9 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 */
 	public static void runTest(String baseDir, String corpusRoot, String randType, String simType, String unitType,
 			String winType, int monteCarlo, boolean xlsOutput, boolean plotGraphs) {
+		numTestsRun++;
 		String randSuffix = (randType.isEmpty() ? "" : "_" + randType + (monteCarlo < 0 ? "" : "_" + monteCarlo));
-		String runId = corpusRoot + randSuffix + "-" + simType + "-" + winType + "-" + unitType;
+		String runId = numTestsRun + " " + corpusRoot + randSuffix + "-" + simType + "-" + winType + "-" + unitType;
 		File xlsFile = new File(runId + ".xlsx");
 
 		AlignmentTester<? extends DialogueUnit> at;
