@@ -132,7 +132,15 @@ public class MetricsMap extends HashMap<String, MetricsMap.Metrics> {
 	 * @return the numUnits
 	 */
 	public int getNumUnits(String key) {
-		return get(key).getNumUnits();
+		try {
+			return get(key).getNumUnits();
+		}
+		catch (NullPointerException ex) {
+			System.err.println("Could not find the key in the the MetricsMap.");
+			System.err.println("The key being searched for was: " + key);
+			System.exit(1);
+			return -1;
+		}
 	}
 
 	/**
