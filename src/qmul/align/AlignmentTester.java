@@ -23,11 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRichTextString;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -124,24 +121,27 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 *            the XLS workbook to write to, or null not to bother
 	 * @return a list of {@link Double} scores, one per {@link DialogueWindower} step (e.g. dialogue turn)
 	 */
-	public List<Double> processDialogue(Dialogue d, HSSFWorkbook wb, HashMap<String, ArrayList<Double>> speakerScores,
+	public List<Double> processDialogue(Dialogue d, Workbook wb, HashMap<String, ArrayList<Double>> speakerScores,
 			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN, MetricsMap spkMetrics,
-			MetricsMap totMetrics, HSSFWorkbook wbcounts, HashMap<String, HashMap<Object, Integer>> allCounts,
+			MetricsMap totMetrics, Workbook wbcounts, HashMap<String, HashMap<Object, Integer>> allCounts,
 			HashMap<String, HashMap<Object, Integer>> commonCounts, HashMap<Object, Integer> diaAllCounts,
 			HashMap<Object, Integer> diaCommonCounts) {
+
+		CreationHelper creationHelper = wb.getCreationHelper();
+		
 		win.setDialogue(d);
 		sim.reset();
 		ArrayList<DialogueSpeaker> spks = new ArrayList<DialogueSpeaker>(d.getSpeakers());
 		Collections.sort(spks);
-		HSSFSheet sheet = (wb == null ? null : wb.createSheet(d.getId().replaceAll(":", "-")));
-		HSSFSheet sheetcounts = (wbcounts == null ? null : wbcounts.createSheet(d.getId().replaceAll(":", "-")));
+		Sheet sheet = (wb == null ? null : wb.createSheet(d.getId().replaceAll(":", "-")));
+		Sheet sheetcounts = (wbcounts == null ? null : wbcounts.createSheet(d.getId().replaceAll(":", "-")));
 		int iRow = 0;
 		if (sheet != null) {
-			iRow = writeSheetHeader(sheet, iRow, d, spks);
+			iRow = writeSheetHeader(creationHelper, sheet, iRow, d, spks);
 		}
 		int iCRow = 0;
 		if (sheetcounts != null) {
-			iCRow = writeSheetHeader(sheet, iCRow, d, spks);
+			iCRow = writeSheetHeader(creationHelper, sheet, iCRow, d, spks);
 		}
 		ArrayList<Double> scores = new ArrayList<Double>();
 		HashSet<X> counted = new HashSet<X>();
@@ -182,17 +182,17 @@ public class AlignmentTester<X extends DialogueUnit> {
 						}
 					}
 				}
-				HSSFRow row = (wb == null ? null : sheet.createRow(iRow++));
+				Row row = (wb == null ? null : sheet.createRow(iRow++));
 				int iCol = 0;
-				HSSFCell cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING));
+				Cell cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_STRING));
 				if (cell != null) {
-					cell.setCellValue(new HSSFRichTextString(r.getSpeaker().getId()));
-					cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING);
-					cell.setCellValue(new HSSFRichTextString(originalSpkKey));
-					// cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING);
-					// cell.setCellValue(new HSSFRichTextString(r.getId()));
-					cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING);
-					cell.setCellValue(new HSSFRichTextString(r.toString()));
+					cell.setCellValue(creationHelper.createRichTextString(r.getSpeaker().getId()));
+					cell = row.createCell(iCol++, Cell.CELL_TYPE_STRING);
+					cell.setCellValue(creationHelper.createRichTextString(originalSpkKey));
+					// cell = row.createCell(iCol++, Cell.CELL_TYPE_STRING);
+					// cell.setCellValue(creationHelper.createRichTextString(r.getId()));
+					cell = row.createCell(iCol++, Cell.CELL_TYPE_STRING);
+					cell.setCellValue(creationHelper.createRichTextString(r.toString()));
 					row.setHeightInPoints(12);
 					sheet.setColumnWidth(iCol - 1, 2560);
 				}
@@ -246,7 +246,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 						MapUtil.addAll(commonCounts.get(""), sim.rawCountsAB());
 						MapUtil.addAll(commonCounts.get(d.getGenre()), sim.rawCountsAB());
 					}
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					if (cell != null) {
 						cell.setCellValue(s);
 					}
@@ -269,16 +269,16 @@ public class AlignmentTester<X extends DialogueUnit> {
 				// print number sents/words/tokens
 				iCol += (win.getLeftWindowSize() - left.size() + 1);
 				if (wb != null) { // if we are writing to a workbook
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					cell.setCellValue(r instanceof DialogueTurn ? ((DialogueTurn) r).getSents().size() : 1);
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					cell.setCellValue(r.numWords());
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					cell.setCellValue(r.numTokens());
 				}
 				iCol += 1;
 				if (!Double.isNaN(offset)) {
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					cell.setCellValue(offset);
 				} else {
 					iCol++;
@@ -288,7 +288,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 					wordRate = Double.NaN; // on some OSs this doesn't happen in the calc above
 				}
 				if (!Double.isNaN(wordRate)) {
-					cell = (wb == null ? null : row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC));
+					cell = (wb == null ? null : row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC));
 					cell.setCellValue(wordRate);
 				} else {
 					iCol++;
@@ -323,15 +323,15 @@ public class AlignmentTester<X extends DialogueUnit> {
 			iRow++;
 			for (DialogueSpeaker spk : spks) {
 				String spkKey = makeSpkKey(spk, d);
-				HSSFRow row = sheet.createRow(iRow++);
+				Row row = sheet.createRow(iRow++);
 				int iCol = 0;
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(spk.getId()));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-						.setCellValue(new HSSFRichTextString(originalSpks.get(spkKey)));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Mean"));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(spk.getId()));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+						.setCellValue(creationHelper.createRichTextString(originalSpks.get(spkKey)));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Mean"));
 				for (int i = 0; i < win.getLeftWindowSize(); i++) {
 					if (speakerN.get(spkKey).get(i) > 0) {
-						row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+						row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC)
 								.setCellValue(speakerScores.get(spkKey).get(i) / speakerN.get(spkKey).get(i));
 					} else {
 						iCol++;
@@ -343,16 +343,16 @@ public class AlignmentTester<X extends DialogueUnit> {
 					// + (speakerScores.get(spkKey).get(i) / speakerN.get(spkKey).get(i)));
 				}
 				iCol++;
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(
 						(double) spkMetrics.getNumUnits(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(
 						(double) spkMetrics.getNumWords(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(
 						(double) spkMetrics.getNumTokens(spkKey) / (double) spkMetrics.getNumUnits(spkKey));
 				iCol++;
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(
 						(double) spkMetrics.getTurnOffset(spkKey) / (double) spkMetrics.getNumTurnOffsets(spkKey));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(
 						(double) spkMetrics.getWordRate(spkKey) / (double) spkMetrics.getNumWordRates(spkKey));
 			}
 		}
@@ -361,14 +361,14 @@ public class AlignmentTester<X extends DialogueUnit> {
 			ArrayList<Object> keys = new ArrayList<Object>(diaAllCounts.keySet());
 			Collections.sort(keys, new DescendingComparator<Object>(diaAllCounts));
 			for (Object key : keys) {
-				HSSFRow row = sheetcounts.createRow(iCRow++);
+				Row row = sheetcounts.createRow(iCRow++);
 				int iCol = 0;
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(key.toString()));
-				HSSFCell cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(key.toString()));
+				Cell cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 				if (diaAllCounts.get(key) != null) {
 					cell.setCellValue(diaAllCounts.get(key));
 				}
-				cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+				cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 				if (diaCommonCounts.get(key) != null) {
 					cell.setCellValue(diaCommonCounts.get(key));
 				}
@@ -377,33 +377,33 @@ public class AlignmentTester<X extends DialogueUnit> {
 		return scores;
 	}
 
-	private int writeSheetHeader(HSSFSheet sheet, int iRow, Dialogue d, List<DialogueSpeaker> spks) {
+	private int writeSheetHeader(CreationHelper creationHelper, Sheet sheet, int iRow, Dialogue d, List<DialogueSpeaker> spks) {
 		int iCol = 0;
-		HSSFRow row = sheet.createRow(iRow++);
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("ID"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(d.getId()));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num speakers"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(d.numSpeakers());
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num turns"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(d.numTurns());
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num sents"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(d.numSents());
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num words"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(d.numWords());
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num tok words"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(d.numTokens());
+		Row row = sheet.createRow(iRow++);
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("ID"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(d.getId()));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num speakers"));
+		row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(d.numSpeakers());
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num turns"));
+		row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(d.numTurns());
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num sents"));
+		row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(d.numSents());
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(d.numWords());
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num tok words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(d.numTokens());
 		iRow++;
 
 		row = sheet.createRow(iRow++);
 		iCol = 0;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Orig Speaker"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("First Name"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Last Name"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Gender"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Age"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Occupation"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue genre"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Orig Speaker"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("First Name"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Last Name"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Gender"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Age"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Occupation"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue genre"));
 		for (DialogueSpeaker s : spks) {
 			// HACK to find first original speaker for speaker - will only work with consistent speaker pairing
 			DialogueSpeaker os = null;
@@ -415,37 +415,37 @@ public class AlignmentTester<X extends DialogueUnit> {
 			}
 			row = sheet.createRow(iRow++);
 			iCol = 0;
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getId()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString(os == null ? "" : os.getId()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getId()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString(os == null ? "" : os.getId()));
 			s = (os == null ? s : os);
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getFirstName()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getLastName()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getGender()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getAge()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(s.getOccupation()));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString(corpus.getGenreMap().get(s.getId().split(":")[0])));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getFirstName()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getLastName()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getGender()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getAge()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(s.getOccupation()));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString(corpus.getGenreMap().get(s.getId().split(":")[0])));
 		}
 		iRow++;
 
 		row = sheet.createRow(iRow++);
 		iCol = 0;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Orig Speaker"));
-		// row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Turn ID"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Transcription"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Orig Speaker"));
+		// row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Turn ID"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Transcription"));
 		for (int i = 0; i < getWin().getLeftWindowSize(); i++) {
-			row.createCell(iCol + i, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString("Val i-" + (i + 1)));
+			row.createCell(iCol + i, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString("Val i-" + (i + 1)));
 		}
 		iCol += getWin().getLeftWindowSize() + 1;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num sents"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num words"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Num tok words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num sents"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Num tok words"));
 		iCol += 1;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Offset time"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Time per word"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Offset time"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Time per word"));
 		return iRow;
 	}
 
@@ -488,8 +488,8 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 */
 	public List<List<Double>> processCorpus(String runId) {
 		ApacheStatistics stats = new ApacheStatistics();
-		HSSFWorkbook wb = (xls == null ? null : new HSSFWorkbook());
-		HSSFWorkbook wbcounts = (xls == null ? null : (counts ? new HSSFWorkbook() : null));
+		Workbook wb = (xls == null ? null : new XSSFWorkbook());
+		Workbook wbcounts = (xls == null ? null : (counts ? new XSSFWorkbook() : null));
 		ArrayList<List<Double>> scores = new ArrayList<List<Double>>();
 		System.out.println("Similarity measure " + sim.getClass().getName() + ", windower " + win);
 		System.out.println("Smoothing " + smoother + ", normalisation=" + normalisation);
@@ -539,27 +539,27 @@ public class AlignmentTester<X extends DialogueUnit> {
 			try {
 				wb.write(xls);
 				if (counts) {
-					wbcounts.write(new FileOutputStream(new File("counts-" + runId + ".xls")));
+					wbcounts.write(new FileOutputStream(new File("counts-" + runId + ".xlsx")));
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(0);
 			}
-			File summaryXls = new File("summary.xls");
-			File countsXls = new File("counts.xls");
-			HSSFWorkbook summaryWb = null;
-			HSSFWorkbook countsWb = null;
+			File summaryXls = new File("summary.xlsx");
+			File countsXls = new File("counts.xlsx");
+			Workbook summaryWb = null;
+			Workbook countsWb = null;
 			try {
 				FileInputStream summaryXlsIn = new FileInputStream(summaryXls);
-				summaryWb = new HSSFWorkbook(summaryXlsIn);
+				summaryWb = new XSSFWorkbook(summaryXlsIn);
 				if (counts) {
 					FileInputStream countsXlsIn = new FileInputStream(countsXls);
-					countsWb = new HSSFWorkbook(countsXlsIn);
+					countsWb = new XSSFWorkbook(countsXlsIn);
 				}
 			} catch (FileNotFoundException e) {
-				summaryWb = new HSSFWorkbook();
+				summaryWb = new XSSFWorkbook();
 				if (counts) {
-					countsWb = new HSSFWorkbook();
+					countsWb = new XSSFWorkbook();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -592,7 +592,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 
 	/**
 	 * @param orig
-	 * @return a version which is less than 32 chars long, to keep the {@link HSSFWorkbook} class restrictions happy
+	 * @return a version which is less than 32 chars long, to keep the {@link Workbook} class restrictions happy
 	 */
 	String shorten(String orig) {
 		String shorter = new String(orig);
@@ -618,12 +618,14 @@ public class AlignmentTester<X extends DialogueUnit> {
 	 * @param originalSpks
 	 * @param speakerN
 	 */
-	private void printSummarySheet(HSSFWorkbook wb, String sheetName, HashMap<String, ArrayList<Double>> speakerScores,
+	private void printSummarySheet(Workbook wb, String sheetName, HashMap<String, ArrayList<Double>> speakerScores,
 			HashMap<String, String> originalSpks, HashMap<String, ArrayList<Double>> speakerN, MetricsMap spkMetrics,
 			MetricsMap totMetrics, boolean pairedCorpus) {
+
+		CreationHelper creationHelper = wb.getCreationHelper();
 		sheetName = (sheetName == null ? "Summary" : shorten(sheetName));
 		System.out.println("Checking workbook " + wb + " for sheet " + sheetName);
-		HSSFSheet sheet = wb.getSheet(sheetName);
+		Sheet sheet = wb.getSheet(sheetName);
 		if (sheet != null) {
 			System.out.println("Exists, removing sheet " + sheetName);
 			wb.removeSheetAt(wb.getSheetIndex(sheet));
@@ -632,37 +634,37 @@ public class AlignmentTester<X extends DialogueUnit> {
 		wb.setSheetOrder(sheetName, 0);
 		int iRow = 0;
 		// first general identifying stuff
-		HSSFRow row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Corpus"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getCorpus().getId()));
+		Row row = sheet.createRow(iRow++);
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Corpus"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getCorpus().getId()));
 		row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Windower"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getWin().toString()));
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Windower"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getWin().toString()));
 		row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Similarity Measure"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getSim().toString()));
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Similarity Measure"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getSim().toString()));
 		// now header
 		row = sheet.createRow(iRow++);
 		row = sheet.createRow(iRow++);
 		int iCol = 0;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Genre"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Orig Speaker"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Orig Genre"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker #units"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue #units"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker #words"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue #words"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker #tokens"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue #tokens"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker avg offset"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue avg offset"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Speaker avg wordrate"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Dialogue avg wordrate"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Genre"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Orig Speaker"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Orig Genre"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker #units"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue #units"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker #words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue #words"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker #tokens"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue #tokens"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker avg offset"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue avg offset"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Speaker avg wordrate"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Dialogue avg wordrate"));
 		iCol++;
 		for (int i = 0; i < getWin().getLeftWindowSize(); i++) {
-			row.createCell(i + iCol, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString("Mean i-" + (i + 1)));
+			row.createCell(i + iCol, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString("Mean i-" + (i + 1)));
 		}
 		// now means per speaker
 		List<String> spks = new ArrayList<String>(speakerScores.keySet());
@@ -691,48 +693,48 @@ public class AlignmentTester<X extends DialogueUnit> {
 				row = sheet.createRow(iRow++);
 				iCol = 0;
 				String dId = spk.replaceFirst("(.*)_.*", "$1");
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-						.setCellValue(new HSSFRichTextString(corpus.getGenreMap().get(spk.split(":")[0])));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-						.setCellValue(new HSSFRichTextString(originalSpks.get(spk)));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(
-						new HSSFRichTextString(corpus.getGenreMap().get(originalSpks.get(spk).split(":")[0])));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumUnits(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumUnits(dId));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumWords(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumWords(dId));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumTokens(spk));
-				row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumTokens(dId));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(spk));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+						.setCellValue(creationHelper.createRichTextString(corpus.getGenreMap().get(spk.split(":")[0])));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+						.setCellValue(creationHelper.createRichTextString(originalSpks.get(spk)));
+				row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(
+						creationHelper.createRichTextString(corpus.getGenreMap().get(originalSpks.get(spk).split(":")[0])));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumUnits(spk));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumUnits(dId));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumWords(spk));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumWords(dId));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(spkMetrics.getNumTokens(spk));
+				row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC).setCellValue(totMetrics.getNumTokens(dId));
 				if (Double.isNaN(spkMetrics.getTurnOffset(spk)) || spkMetrics.getNumTurnOffsets(spk) == 0) {
 					iCol++;
 				} else {
-					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+					row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC)
 							.setCellValue(spkMetrics.getTurnOffset(spk) / (double) spkMetrics.getNumTurnOffsets(spk));
 				}
 				if (Double.isNaN(totMetrics.getTurnOffset(dId)) || totMetrics.getNumTurnOffsets(dId) == 0) {
 					iCol++;
 				} else {
-					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+					row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC)
 							.setCellValue(totMetrics.getTurnOffset(dId) / (double) totMetrics.getNumTurnOffsets(dId));
 				}
 				if (Double.isNaN(spkMetrics.getWordRate(spk)) || spkMetrics.getNumWordRates(spk) == 0) {
 					iCol++;
 				} else {
-					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+					row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC)
 							.setCellValue(spkMetrics.getWordRate(spk) / (double) spkMetrics.getNumWordRates(spk));
 				}
 				if (Double.isNaN(totMetrics.getWordRate(dId)) || totMetrics.getNumWordRates(dId) == 0) {
 					iCol++;
 				} else {
-					row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC)
+					row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC)
 							.setCellValue(totMetrics.getWordRate(dId) / (double) totMetrics.getNumWordRates(dId));
 				}
 				iCol++;
 				for (int i = 0; i < speakerScores.get(spk).size(); i++) {
 					if (speakerN.get(spk).get(i) > 0.0) {
 						double mean = speakerScores.get(spk).get(i) / speakerN.get(spk).get(i);
-						row.createCell(i + iCol, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(mean);
+						row.createCell(i + iCol, Cell.CELL_TYPE_NUMERIC).setCellValue(mean);
 						means.set(i, means.get(i) + mean);
 						nums.set(i, nums.get(i) + 1);
 					}
@@ -743,22 +745,24 @@ public class AlignmentTester<X extends DialogueUnit> {
 		// and a final row for overall means
 		row = sheet.createRow(iRow++);
 		iCol = 14;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Overall"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Overall"));
 		for (int i = 0; i < getWin().getLeftWindowSize(); i++) {
 			means.set(i, means.get(i) / nums.get(i));
-			row.createCell(i + iCol, HSSFCell.CELL_TYPE_NUMERIC).setCellValue(means.get(i));
+			row.createCell(i + iCol, Cell.CELL_TYPE_NUMERIC).setCellValue(means.get(i));
 		}
 	}
 
 	/**
 	 * Print a summary sheet on the (gulp) excel spreadsheet
 	 */
-	private void printSummaryCountSheet(HSSFWorkbook wb, String sheetName,
+	private void printSummaryCountSheet(Workbook wb, String sheetName,
 			HashMap<String, HashMap<Object, Integer>> allCounts,
 			HashMap<String, HashMap<Object, Integer>> commonCounts) {
+
+		CreationHelper creationHelper = wb.getCreationHelper();
 		sheetName = (sheetName == null ? "Summary" : shorten(sheetName));
 		System.out.println("Checking workbook " + wb + " for sheet " + sheetName);
-		HSSFSheet sheet = wb.getSheet(sheetName);
+		Sheet sheet = wb.getSheet(sheetName);
 		if (sheet != null) {
 			System.out.println("Exists, removing sheet " + sheetName);
 			wb.removeSheetAt(wb.getSheetIndex(sheet));
@@ -767,52 +771,52 @@ public class AlignmentTester<X extends DialogueUnit> {
 		wb.setSheetOrder(sheetName, 0);
 		int iRow = 0;
 		// first general identifying stuff
-		HSSFRow row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Corpus"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getCorpus().getId()));
+		Row row = sheet.createRow(iRow++);
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Corpus"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getCorpus().getId()));
 		row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Windower"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getWin().toString()));
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Windower"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getWin().toString()));
 		row = sheet.createRow(iRow++);
-		row.createCell(0, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Similarity Measure"));
-		row.createCell(1, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(getSim().toString()));
+		row.createCell(0, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Similarity Measure"));
+		row.createCell(1, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(getSim().toString()));
 		// now header
 		row = sheet.createRow(iRow++);
 		row = sheet.createRow(iRow++);
 		int iCol = 0;
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Type"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Overall count"));
-		row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString("Common count"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Type"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Overall count"));
+		row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString("Common count"));
 		for (String genre : allCounts.keySet()) {
 			if (genre.isEmpty())
 				continue;
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString(genre + " overall count"));
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING)
-					.setCellValue(new HSSFRichTextString(genre + " common count"));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString(genre + " overall count"));
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING)
+					.setCellValue(creationHelper.createRichTextString(genre + " common count"));
 		}
 		ArrayList<Object> keys = new ArrayList<Object>(allCounts.get("").keySet());
 		Collections.sort(keys, new DescendingComparator<Object>(allCounts.get("")));
 		for (Object key : keys) {
 			row = sheet.createRow(iRow++);
 			iCol = 0;
-			row.createCell(iCol++, HSSFCell.CELL_TYPE_STRING).setCellValue(new HSSFRichTextString(key.toString()));
-			HSSFCell cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+			row.createCell(iCol++, Cell.CELL_TYPE_STRING).setCellValue(creationHelper.createRichTextString(key.toString()));
+			Cell cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 			if (allCounts.get("").get(key) != null) {
 				cell.setCellValue(allCounts.get("").get(key));
 			}
-			cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+			cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 			if (commonCounts.get("").get(key) != null) {
 				cell.setCellValue(commonCounts.get("").get(key));
 			}
 			for (String genre : allCounts.keySet()) {
 				if (genre.isEmpty())
 					continue;
-				cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+				cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 				if (allCounts.get(genre).get(key) != null) {
 					cell.setCellValue(allCounts.get(genre).get(key));
 				}
-				cell = row.createCell(iCol++, HSSFCell.CELL_TYPE_NUMERIC);
+				cell = row.createCell(iCol++, Cell.CELL_TYPE_NUMERIC);
 				if (commonCounts.get(genre).get(key) != null) {
 					cell.setCellValue(commonCounts.get(genre).get(key));
 				}
@@ -1007,7 +1011,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 			String winType, int monteCarlo, boolean xlsOutput, boolean plotGraphs) {
 		String randSuffix = (randType.isEmpty() ? "" : "_" + randType + (monteCarlo < 0 ? "" : "_" + monteCarlo));
 		String runId = corpusRoot + randSuffix + "-" + simType + "-" + winType + "-" + unitType;
-		File xlsFile = new File(runId + ".xls");
+		File xlsFile = new File(runId + ".xlsx");
 
 		AlignmentTester<? extends DialogueUnit> at;
 		int leftWindow = ((simType.equals("gries") || winType.startsWith("all")) ? 1 : 5);
