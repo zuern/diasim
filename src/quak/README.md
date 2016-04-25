@@ -2,7 +2,7 @@ Queen's University at Kingston Ontario
 Speech Lab - Department of Psychology
 Author: Kevin Zuern
 --------------------------------------
-HOW TO USE THIS MODULE
+# HOW TO USE THIS MODULE
 --------------------------------------
 This module creates a really simple way of utilizing the incredibly powerful DIASIM library - specifically using it to
 run AlignmentTests.
