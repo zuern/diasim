@@ -1185,7 +1185,7 @@ public class AlignmentTester<X extends DialogueUnit> {
 		DialogueCorpus corpus = DialogueCorpus.readFromFile(new File(baseDir + corpusName));
 		if (corpus == null) {
 			if (!randType.isEmpty()) {
-				corpus = DialogueCorpus.readFromFile(new File(corpusRoot + ".corpus"));
+				corpus = DialogueCorpus.readFromFile(new File(baseDir + corpusRoot + ".corpus"));
 			}
 			if (corpus == null) {
 				if (corpusRoot.startsWith("dcpse")) {

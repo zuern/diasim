@@ -1,12 +1,12 @@
-package quak;
+package quak.tests;
 
+import qmul.align.AlignmentTester;
 import qmul.corpus.CorpusParser;
 import quak.corpus.TextCorpus;
 import java.io.File;
-import static qmul.align.AlignmentTester.runTest;
 
 /**
- * Provides toolset to execute and evaluate Alignment Tests using the DIASIM Library
+ * Provides a tool-set to execute and evaluate Alignment Tests using the DIASIM Library
  *
  * @author Kevin
  */
@@ -61,9 +61,9 @@ public abstract class TestingTools {
      * @param t
      *      The configuration to use for this test. You can create a TestingConfiguration object easily using TestingConfiguration.create.
      */
-    public static void RunSingleTest(TestingConfiguration t) {
+    public static void runTest(TestingConfiguration t) {
         // Run the test with the supplied parameters
-        runTest(
+        AlignmentTester.runTest(
                 t.baseDir,t.corpusRoot,
                 t.randType,t.simType,t.unitType,t.winType,
                 t.monteCarlo,
@@ -77,6 +77,6 @@ public abstract class TestingTools {
      */
     public static void RunMultipleTests(TestingConfiguration[] testParametersArray) {
         for (TestingConfiguration testParameters : testParametersArray)
-            RunSingleTest(testParameters);
+            runTest(testParameters);
     }
 }
