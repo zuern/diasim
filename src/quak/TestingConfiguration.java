@@ -72,6 +72,12 @@ public class TestingConfiguration {
 
 
     // For description of what these all do, see RandomCorpus.RAND_XXXX
+
+    /**
+     * Do not use randomization when testing
+     */
+    public static final String RAND_No_Randomization                    = "";
+
     /**
      * Create Random corpus using this config:
      * RandomCorpus(corpus, RandomCorpus.RAND_OTHER_TURNS, RandomCorpus.PAD_CUT, RandomCorpus.LENGTH_IN_TURNS, true, true, 0)
