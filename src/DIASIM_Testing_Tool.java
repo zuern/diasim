@@ -27,7 +27,7 @@ public class DIASIM_Testing_Tool {
     private static void Main_Menu() {
         header("Main Menu");
         p("[0]\tSelect a corpus to work with");
-        p("[1]\tCreate Corpus from text files (Default)");
+        p("[1]\tCreate Corpus from text files");
         p("[2]\tParse a corpus (Generates syntax using standford parser");
         p("[3]\tRun a test on a loaded corpus");
         p("[4]\tExit the program");
@@ -131,6 +131,7 @@ public class DIASIM_Testing_Tool {
 
         // Randomization
         header("Randomization Options");
+        p("[0]\t No Randomization");
         p("[1]\t Random1");
         p("[2]\t Random2");
         p("[3]\t Random3");
@@ -141,6 +142,9 @@ public class DIASIM_Testing_Tool {
 
         switch (readInt("Please choose the randomization type from the list above"))
         {
+            case 0:
+                randtype = TestingConfiguration.RAND_No_Randomization;
+                break;
             case 1:
                 randtype = TestingConfiguration.RAND_Random1;
                 break;
