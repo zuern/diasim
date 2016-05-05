@@ -1,4 +1,4 @@
-package quak;
+package quak.tests;
 
 /**
  * Describes a set of parameters needed to run a single test using qmul.align.AlignmentTester.
@@ -43,7 +43,7 @@ public class TestingConfiguration {
      * @param plotGraphs
      *          True to display graphs after running the test.
      * @return
-     *          A TestingConfiguration object to pass to quak.TestingTools.runSingleTest or quak.TestingTools.runMultipleTests
+     *          A TestingConfiguration object to pass to quak.tests.TestingTools.runSingleTest or quak.tests.TestingTools.runMultipleTests
      */
     public static TestingConfiguration create (
             String baseDir, String corpusRoot, String randType, String simType, String unitType,
@@ -55,8 +55,11 @@ public class TestingConfiguration {
     }
 
     // Selects the similiarity measure found in qmul.align
-    public static final String SIM_LEXICAL_SIMILARITYMEASURE            = "lex";
-    public static final String SIM_SYNTACTIC_SIMILARITYMEASURE          = "syn";
+    // lex, tok, syn,
+    public static final String SIM_SENTENCE_LEXICAL                     = "lex";
+    public static final String SIM_SENTENCE_LEXICAL_TOKEN               = "tok";
+    public static final String SIM_SENTENCE_SYNTACTIC                   = "syn";
+    public static final String SIM_SENTENCE_LAST_CONSTRUCTION           = "gries";
 
     // Selects the unit type found in qmul.align
     public static final String UNIT_USE_SENTENCES                       = "sent";

@@ -1,11 +1,14 @@
 package quak;
 
+import quak.tests.TestingConfiguration;
+import quak.tests.TestingTools;
+
 import java.io.File;
 
 /**
  * This class exposes methods to test the various faculties of the diasim library
  */
-public abstract class TranscriptsWorker {
+public abstract class SpeechLab_Tests {
 
     public static void main(String[] args) {
         // Configuration settings for the batch tests.
@@ -77,8 +80,8 @@ public abstract class TranscriptsWorker {
                 TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestingConfiguration.RAND_No_Randomization,
-                        TestingConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SENTENCE_SYNTACTIC,
                         TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
                         TestingConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
                         monteCarlo,
@@ -88,8 +91,8 @@ public abstract class TranscriptsWorker {
                 TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestingConfiguration.RAND_No_Randomization,
-                        TestingConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SENTENCE_LEXICAL,
                         TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
                         TestingConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower,
                         monteCarlo,
@@ -100,8 +103,8 @@ public abstract class TranscriptsWorker {
                 TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestingConfiguration.RAND_No_Randomization,
-                        TestingConfiguration.SIM_SYNTACTIC_SIMILARITYMEASURE,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SENTENCE_SYNTACTIC,
                         TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
                         TestingConfiguration.WIN_USE_OtherSpeakerTurnWindower,
                         monteCarlo,
@@ -111,8 +114,8 @@ public abstract class TranscriptsWorker {
                 TestingConfiguration.create(
                         baseDir,
                         corpusName,
-                        TestingConfiguration.RAND_No_Randomization,
-                        TestingConfiguration.SIM_LEXICAL_SIMILARITYMEASURE,
+                        TestingConfiguration.RAND_Random4,
+                        TestingConfiguration.SIM_SENTENCE_LEXICAL,
                         TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure,
                         TestingConfiguration.WIN_USE_OtherSpeakerTurnWindower,
                         monteCarlo,
