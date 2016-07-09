@@ -26,13 +26,14 @@ public class DIASIM_Testing_Tool {
 
     private static void Main_Menu() {
         header("Main Menu");
-        p("[0]\tSelect a corpus to work with");
-        p("[1]\tCreate Corpus from text files (Default)");
-        p("[2]\tParse a corpus (Generates syntax using standford parser");
-        p("[3]\tRun a test on a loaded corpus");
-        p("[4]\tExit the program");
 
-        int selection = getSelection(0,34);
+        int selection = selectMenu(new String[]{
+                "Select a corpus to work with",
+                "Create Corpus from text files (Default)",
+                "Parse a corpus (Generates syntax using standford parser",
+                "Run a test on a loaded corpus",
+                "Exit the program"
+        });
 
         switch (selection){
             case 0:
@@ -61,6 +62,10 @@ public class DIASIM_Testing_Tool {
         File textTranscriptsDir;
 
         header("Create a Corpus File");
+
+        p("What format are the files?");
+        p("[");
+
         corpusFilePath = new File(readString("Please enter the full path to where the corpus should be saved"));
         textTranscriptsDir = new File(readString("Please enter the folder path where the transcripts are located."));
         p("Please press enter to create your corpus.");
@@ -131,15 +136,17 @@ public class DIASIM_Testing_Tool {
 
         // Randomization
         header("Randomization Options");
-        p("[1]\t Random1");
-        p("[2]\t Random2");
-        p("[3]\t Random3");
-        p("[4]\t Random4");
-        p("[5]\t Random5");
-        p("[6]\t Random_Same");
-        p("[7]\t Random_S2me");
+        int randomType = selectMenu(new String[] {
+                "Random1",
+                "Random2",
+                "Random3",
+                "Random4",
+                "Random5",
+                "Random_Same",
+                "Random_S2me",
+        });
 
-        switch (readInt("Please choose the randomization type from the list above"))
+        switch (randomType)
         {
             case 1:
                 randtype = TestingConfiguration.RAND_Random1;
@@ -170,22 +177,24 @@ public class DIASIM_Testing_Tool {
 
         // Similarity
         header("Similarity Measures");
-        p("[1] Sentence Lexical");
-        p("[2] Sentence Lexical Token");
-        p("[3] Sentence Syntactic");
-        p("[4] Sentence Last Construction");
+        int simType = selectMenu(new String[] {
+                "Sentence Lexical",
+                "Sentence Lexical Token",
+                "Sentence Syntactic",
+                "Sentence Last Construction",
+        });
 
-        switch(readInt("Please choose how you want to calculate similarity")) {
-            case 1:
+        switch(simType) {
+            case 0:
                 simtype = TestingConfiguration.SIM_SENTENCE_LEXICAL;
                 break;
-            case 2:
+            case 1:
                 simtype = TestingConfiguration.SIM_SENTENCE_LEXICAL_TOKEN;
                 break;
-            case 3:
+            case 2:
                 simtype = TestingConfiguration.SIM_SENTENCE_SYNTACTIC;
                 break;
-            case 4:
+            case 3:
                 simtype = TestingConfiguration.SIM_SENTENCE_LAST_CONSTRUCTION;
                 break;
             default:
@@ -196,25 +205,28 @@ public class DIASIM_Testing_Tool {
 
         // Windowing
         header("Windower Types");
-        p("[1] Other Speaker Turn Windower");
-        p("[2] Same  Speaker Turn Windower");
-        p("[3] Other Speaker All Other Turn Windower");
-        p("[4] Same  Speaker All Other Turn Windower");
-        p("[5] Sentence Windower");
-        switch (readInt("Please select how you want the windower to run")) {
-            case 1:
+        int windowType = selectMenu(new String[] {
+                "Other Speaker Turn Windower",
+                "Same  Speaker Turn Windower",
+                "Other Speaker All Other Turn Windower",
+                "Same  Speaker All Other Turn Windower",
+                "Sentence Windower",
+        });
+
+        switch (windowType) {
+            case 0:
                 wintype = TestingConfiguration.WIN_USE_OtherSpeakerTurnWindower;
                 break;
-            case 2:
+            case 1:
                 wintype = TestingConfiguration.WIN_USE_SameSpeakerTurnWindower;
                 break;
-            case 3:
+            case 2:
                 wintype = TestingConfiguration.WIN_USE_OtherSpeakerAllOtherTurnWindower;
                 break;
-            case 4:
+            case 3:
                 wintype = TestingConfiguration.WIN_USE_SameSpeakerAllOtherTurnWindower;
                 break;
-            case 5:
+            case 4:
                 wintype = TestingConfiguration.WIN_USE_SentenceWindower;
                 break;
             default:
@@ -225,17 +237,19 @@ public class DIASIM_Testing_Tool {
 
         // Units
         header("Unit Type");
-        p("[1] Measure Units in Sentences");
-        p("[2] Measure Units in Turns (TurnAverageSimiliarityMeasure)");
-        p("[3] Measure Units in Turns (TurnConcatSimiliarityMeasure");
-        switch(readInt("Please select what units to use during windowing")) {
-            case 1:
+        int unitType = selectMenu(new String[] {
+                "Measure Units in Sentences",
+                "Measure Units in Turns (TurnAverageSimiliarityMeasure)",
+                "Measure Units in Turns (TurnConcatSimiliarityMeasure",
+        });
+        switch(unitType) {
+            case 0:
                 unittype = TestingConfiguration.UNIT_USE_SENTENCES;
                 break;
-            case 2:
+            case 1:
                 unittype = TestingConfiguration.UNIT_USE_TurnAverageSimilarityMeasure;
                 break;
-            case 3:
+            case 2:
                 unittype = TestingConfiguration.UNIT_USE_TurnConcatSimilarityMeasure;
                 break;
             default:
@@ -461,5 +475,21 @@ public class DIASIM_Testing_Tool {
             else
                 p("Using \"" + corpusFile.getName() + "\".");
         }
+    }
+
+    /**
+     * Output a selection to the console. Collects user selection and returns zero-indexed selection number
+     * @param messages An array of options to display in order.
+     * @return A zero-index value specifying the selected message.
+     */
+    private static int selectMenu(String[] messages) {
+        int counter = 0;
+        for (String message : messages) {
+            p(String.format("[%d] %s", counter, message));
+            counter++;
+        }
+
+        return getSelection(0, counter);
+
     }
 }
