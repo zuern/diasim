@@ -10,12 +10,13 @@
  ******************************************************************************/
 package qmul.corpus;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import qmul.util.parse.ClarkCurranParser;
 import qmul.util.parse.CreateTreeFromClarkCurranCCGProlog;
@@ -188,6 +189,91 @@ public class SBCSAECorpus extends DialogueCorpus {
 				c.writeToFile(new File("sbcsae_" + parserName + ".corpus.gz"));
 			}
 		}
+	}
+
+	/**
+	 * Overrides the default writeToFile method. Saves the SBCSAECorpus to the disk in pieces to avoid out of memory
+	 * issues.
+	 * @param file The file to write to
+	 * @return true if successful, false otherwise
+     */
+	@Override
+	public boolean writeToFile(File file) {
+		ObjectOutputStream out;
+		try {
+			OutputStream outs = new FileOutputStream(file);
+			if (file.getName().endsWith(".gz")) {
+				outs = new GZIPOutputStream(outs);
+			}
+			out = new ObjectOutputStream(outs);
+			out.writeObject(this.id);
+			out.writeObject(this.dir);
+			out.writeObject(this.dynamic);
+			out.writeObject(this.dialogues);
+			out.writeObject(this.speakerMap);
+			out.writeObject(this.genreMap);
+			out.writeObject(this.genreCounts);
+			out.writeObject(this.minSpeakers);
+			out.writeObject(this.maxSpeakers);
+			out.writeObject(this.maxDialogues);
+			out.writeObject(this.minGenreCount);
+			System.out.println("Saved corpus to file " + file);
+			out.close();
+			return true;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+
+
+    public static DialogueCorpus readFromFile(File file) {
+        try {
+            InputStream ins = new FileInputStream(file);
+            if (file.getName().endsWith(".gz")) {
+                ins = new GZIPInputStream(ins);
+            }
+            ObjectInputStream in = new ObjectInputStream(ins);
+            System.out.print("Reading corpus from file " + file + " ... ");
+
+            String id = (String) in.readObject();
+            File dir = (File) in.readObject();
+
+            boolean dynamic = (Boolean) in.readObject();
+            ArrayList<Dialogue> dialogues = (ArrayList<Dialogue>) in.readObject();
+            HashMap<String, DialogueSpeaker> speakerMap = (HashMap<String, DialogueSpeaker>) in.readObject();
+            HashMap<String, String> genreMap = (HashMap<String, String>) in.readObject();
+            HashMap<String, Integer> genreCounts = (HashMap<String, Integer>) in.readObject();
+            int minSpeakers = (Integer) in.readObject();
+            int maxSpeakers = (Integer) in.readObject();
+            int maxDialogues = (Integer) in.readObject();
+            int minGenreCount = (Integer) in.readObject();
+
+            SBCSAECorpus c = new SBCSAECorpus(id, file.getAbsolutePath());
+            c.id = id;
+            c.dir = dir;
+            c.dynamic = dynamic;
+            c.dialogues = dialogues;
+            c.speakerMap = speakerMap;
+            c.genreMap = genreMap;
+            c.genreCounts = genreCounts;
+            c.minSpeakers = minSpeakers;
+            c.maxSpeakers = maxSpeakers;
+            c.maxDialogues = maxDialogues;
+            c.minGenreCount = minGenreCount;
+
+            return c;
+        }
+        catch (IOException ex) {
+            // todo
+            return null;
+        }
+        catch (ClassNotFoundException ex) {
+            // todo
+            return null;
+        }
 	}
 
 }

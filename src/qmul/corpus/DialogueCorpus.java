@@ -35,18 +35,18 @@ public abstract class DialogueCorpus implements Serializable {
 
 	private static final long serialVersionUID = 1087872150946458894L;
 
-	private String id;
-	private File dir;
-	private boolean dynamic;
-	private ArrayList<Dialogue> dialogues;
-	private HashMap<String, DialogueSpeaker> speakerMap;
-	private HashMap<String, String> genreMap;
-	private HashMap<String, Integer> genreCounts;
+	String id;
+	File dir;
+	boolean dynamic;
+	ArrayList<Dialogue> dialogues;
+	HashMap<String, DialogueSpeaker> speakerMap;
+	HashMap<String, String> genreMap;
+	HashMap<String, Integer> genreCounts;
 
-	private int minSpeakers = 0;
-	private int maxSpeakers = 0;
-	private int maxDialogues = 0;
-	private int minGenreCount = 0;
+	int minSpeakers = 0;
+	int maxSpeakers = 0;
+	int maxDialogues = 0;
+	int minGenreCount = 0;
 
 	/**
 	 * @deprecated just for serialization

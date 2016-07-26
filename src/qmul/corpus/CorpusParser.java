@@ -108,7 +108,7 @@ public class CorpusParser {
 					} else {
 						throw new RuntimeException("unknown parser class " + parser);
 					}
-					System.err.println(" success!\n" + t.pennString());
+					System.err.println(" success!\n"); //+ t.pennString());
 					s.setSyntax(t);
 				} else {
 					System.err.println(" failed.");
@@ -118,6 +118,7 @@ public class CorpusParser {
 						+ Runtime.getRuntime().totalMemory());
 				System.out.println("Parser done " + iD + " dialogues, " + iS + " sentences ...");
 			}
+
 		}
 		System.out.println("Finished (parsed " + iP + " sentences)");
 		return iP;

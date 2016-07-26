@@ -1,3 +1,5 @@
+import qmul.corpus.DialogueCorpus;
+import qmul.corpus.SBCSAECorpus;
 import quak.tests.TestingConfiguration;
 import quak.tests.TestingTools;
 
@@ -63,14 +65,28 @@ public class DIASIM_Testing_Tool {
 
         header("Create a Corpus File");
 
-        p("What format are the files?");
-        p("[");
+        p("Specify the type of corpus you're importing:");
+        int corpusType = selectMenu(new String[]{
+                "Text Corpus",
+                "Santa Barbara Corpus",
+        });
 
         corpusFilePath = new File(readString("Please enter the full path to where the corpus should be saved"));
-        textTranscriptsDir = new File(readString("Please enter the folder path where the transcripts are located."));
+        textTranscriptsDir = new File(readString("Please enter the folder path where the files are located."));
         p("Please press enter to create your corpus.");
         WaitForEnter();
-        TestingTools.CreateCorpus(textTranscriptsDir,corpusFilePath);
+
+        switch(corpusType) {
+            case 0:
+                TestingTools.CreateCorpus(textTranscriptsDir,corpusFilePath);
+                break;
+            case 1:
+                new SBCSAECorpus("corpus", textTranscriptsDir.getAbsolutePath()).writeToFile(corpusFilePath);
+                break;
+            default:
+                p("Invalid corpus type selected. Going back to main menu");
+                return;
+        }
         p("Corpus created, and saved to " + corpusFilePath);
 
 
@@ -89,7 +105,8 @@ public class DIASIM_Testing_Tool {
         WaitForEnter();
         p("Parsing corpus now...");
         try {
-            TestingTools.ParseCorpus(corpusFile);
+            DialogueCorpus corpus = DialogueCorpus.readFromFile(corpusFile);
+            TestingTools.ParseCorpus(corpus, corpusFile);
         }
         catch (RuntimeException e) {
             System.err.println("Could not run the parser");

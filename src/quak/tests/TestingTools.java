@@ -2,6 +2,8 @@ package quak.tests;
 
 import qmul.align.AlignmentTester;
 import qmul.corpus.CorpusParser;
+import qmul.corpus.DialogueCorpus;
+import qmul.corpus.SBCSAECorpus;
 import quak.corpus.TextCorpus;
 import java.io.File;
 
@@ -36,16 +38,14 @@ public abstract class TestingTools {
     /**
      * This method will parse the corpus and calculate syntactic information via the stanford parser.
      * It will re-save the corpus back to disk with syntactic information.
-     * @param corpusFile
-     *      The corpus to parse
+     * @param corpus
      */
-    public static TextCorpus ParseCorpus(File corpusFile) {
-        TextCorpus corpus = (TextCorpus) TextCorpus.readFromFile(corpusFile);
-
+    public static DialogueCorpus ParseCorpus(DialogueCorpus corpus, File corpusFilePath) {
         CorpusParser parser = new CorpusParser();
         parser.setParser();                     // Run with default stanford settings
+        parser.setLeaveExisting(true);          // Prevent overwrite existing parse data
         if (parser.parse(corpus) > 0) {         // Only write to file if it actually parsed something
-            corpus.writeToFile(corpusFile);     // Modifies corpus by adding syntactic information.
+            corpus.writeToFile(corpusFilePath);     // Modifies corpus by adding syntactic information.
             return corpus;
         }
         else

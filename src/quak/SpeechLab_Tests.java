@@ -22,7 +22,7 @@ public abstract class SpeechLab_Tests {
 
         // Create the corpus and parse it
         //TestingTools.CreateCorpus(transcriptsDir, new File("../\\Latif_Diasim\\corpora\\" + corpusName + ".corpus"));
-        //TestingTools.ParseCorpus(new File("../\\Latif_Diasim\\corpora\\" + corpusName + ".corpus"));
+        //TestingTools.ParseTextCorpus(new File("../\\Latif_Diasim\\corpora\\" + corpusName + ".corpus"));
 
         TestingConfiguration[] TestConfigs = new TestingConfiguration[] {
                 // LEX and SYN using WIN_USE_OtherSpeakerAllOtherTurnWindower
